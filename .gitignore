@@ -38,3 +38,4 @@ bookings.json
 *.log
 *.sqlite
 .env
+.bin
