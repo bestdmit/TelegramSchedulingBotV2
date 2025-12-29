@@ -1,3 +1,13 @@
 from database_worker import DataBaseWorker
+import asyncio
+
 print("start")
-dataBaseWorker = DataBaseWorker()
+
+
+async def main():
+    dataBaseWorker = DataBaseWorker()
+    await dataBaseWorker.connect()
+    await dataBaseWorker.check_tables()
+
+
+asyncio.run(main())
