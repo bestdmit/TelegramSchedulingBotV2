@@ -12,3 +12,7 @@ from aiogram.fsm.state import State, StatesGroup
 class RegistrationStates(StatesGroup):
     INPUT_NAME = State()
     SELECT_SUBJECTS = State()
+
+class AdminStates(StatesGroup):
+    SEARCH_USER = State()
+    SELECT_ROLE = State()

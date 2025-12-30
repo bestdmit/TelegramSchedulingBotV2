@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from config import BOT_TOKEN, ADMIN_IDS, is_admin
 from database import db
-from states import RegistrationStates
+from states import RegistrationStates, AdminStates
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -68,6 +68,53 @@ async def process_name(message: types.Message, state: FSMContext):
             logger.error(f"Не удалось уведомить админа {admin_id}: {e}")
     
     await state.clear()
+
+@dp.message(Command("cancel"))
+async def cmd_cancel(message: types.Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Операция отменена.")
+
+@dp.message(lambda message: message.text == "➕ Добавить роль пользователю")
+async def admin_add_role_start(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    if not is_admin(user_id):
+        await message.answer("У вас нет прав администратора.")
+        return
+    await message.answer("Введите ФИО или часть имени пользователя для поиска:")
+    await state.set_state(AdminStates.SEARCH_USER)
+
+@dp.message(AdminStates.SEARCH_USER)
+async def admin_search_user(message: types.Message, state: FSMContext):
+    query = message.text.strip()
+    results = await db.find_users_by_name(query)
+    if not results:
+        await message.answer("Пользователи не найдены. Попробуйте другой запрос или введите /cancel.")
+        return
+    kb = InlineKeyboardBuilder()
+    for u in results:
+        kb.button(text=f"{u.get('user_name')} ({u.get('user_id')})", callback_data=f"admin_choose_user_{u.get('user_id')}")
+    kb.adjust(1)
+    await message.answer("Выберите пользователя:", reply_markup=kb.as_markup())
+    await state.clear()
+
+@dp.callback_query(F.data.startswith("admin_choose_user_"))
+async def admin_choose_user(callback: types.CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Нет доступа", show_alert=True)
+        return
+    user_id = int(callback.data.replace("admin_choose_user_", ""))
+    user = await db.get_user(user_id)
+    if not user:
+        await callback.answer("Пользователь не найден", show_alert=True)
+        return
+    user_name = user.get('user_name', '')
+    admin_kb = InlineKeyboardBuilder()
+    admin_kb.button(text="👨‍🏫 Преподаватель", callback_data=f"admin_add_teacher_{user_id}")
+    admin_kb.button(text="👨‍🎓 Ученик", callback_data=f"admin_add_student_{user_id}")
+    admin_kb.button(text="👨‍👩‍👧‍👦 Родитель", callback_data=f"admin_add_parent_{user_id}")
+    admin_kb.adjust(1)
+    await callback.message.edit_text(f"Пользователь: {user_name}\nВыберите роль:", reply_markup=admin_kb.as_markup())
+    await callback.answer()
 
 @dp.callback_query(F.data.startswith("admin_add_parent_"))
 async def admin_add_parent(callback: types.CallbackQuery):

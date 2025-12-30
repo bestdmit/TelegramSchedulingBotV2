@@ -12,9 +12,29 @@ class Database:
     async def connect(self):
         try:
             self.pool = await asyncpg.create_pool(self.connection_string)
-            logger.info("✅ PostgreSQL подключена")
+            # Ensure DB schema is up-to-date: create table or add missing columns if needed
+            async with self.pool.acquire() as conn:
+                # Create the table if it doesn't exist (init.sql mirrors this)
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        user_id INTEGER PRIMARY KEY,
+                        user_name VARCHAR(255) NOT NULL,
+                        roles TEXT DEFAULT '',
+                        teacher_subjects TEXT DEFAULT '',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+
+                # For older DBs: add columns if they are missing (safe, idempotent)
+                await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS roles TEXT DEFAULT '';")
+                await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS teacher_subjects TEXT DEFAULT '';")
+                await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
+                await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
+
+            logger.info("✅ PostgreSQL подключена и схема проверена")
         except Exception as e:
-            logger.error(f"❌ Ошибка подключения: {e}")
+            logger.error(f"❌ Ошибка подключения или миграции: {e}")
             raise
     
     async def close(self):
