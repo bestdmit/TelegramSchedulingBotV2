@@ -7,7 +7,7 @@ import psycopg2
 import logging
 import datetime
 load_dotenv()
-class DataBaseWorker:
+class UsersDataBaseWorker:
     def __init__(self):
         self.connection_string = os.getenv("DATABASE_URL")
         if self.connection_string:
@@ -34,7 +34,6 @@ class DataBaseWorker:
                         SELECT table_name 
                         FROM information_schema.tables 
                         WHERE table_schema = 'public'
-                        AND table_name IN ('users')
                     """)
             print("Таблицы в бд:",tables)
         except Exception as e:
