@@ -61,7 +61,6 @@ class DataBaseWorker:
                 print("Нет подключения к БД")
                 return
             async with self.pool.acquire() as conn:
-                query:str
                 if roles == None:
                     query = """
                         INSERT INTO users (user_id, user_name) 
@@ -137,7 +136,30 @@ class DataBaseWorker:
         except Exception as e:
             print(f"Ошибка при обновлении пользователя: {e}")
             return False
-        
+    
+    async def delete_user(self,user_id:int)->bool:
+        try:
+            if not self.pool:
+                print("Нет подключения к БД")
+                return 
+            
+            async with self.pool.acquire() as conn:
+                query = "DELETE FROM users WHERE user_id = $1"
+                await conn.execute(query,user_id)
+                print(f"Пользователь {user_id} успешно удален")
+        except Exception as e:
+            print(f"Ошиюка удаления пользователя: {e}")
+            
+    async def check_user(self,user_id:int)->bool:
+        """Проверяет записан ли уже пользователь"""
+        try:
+            if not self.pool:
+                print("Нет подключения к БД")
+                return 
+            get = await self.get_user(user_id)
+            return (get is not None)
+        except Exception as e:
+            print(f"Ошибка проверки существования пользователя: {e}")
     async def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Получает пользователя по ID"""
         try:
