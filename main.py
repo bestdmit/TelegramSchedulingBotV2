@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 import os
-
+from handlers.user_router import router as user_router
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -15,25 +15,23 @@ dp = Dispatcher()
 
 print("start")
 
-@dp.message(Command("start"))
-async def start_handler(message: types.Message):
-    await message.answer("Привет!")
 
 async def main():
     usersdataBaseWorker = UsersDataBaseWorker()
     bookingsDatabaseworker = BookingsDataBaseWorker()
-
-    await dp.start_polling(bot)
+    await usersdataBaseWorker.connect()
+    dp.include_router(user_router)
+    await dp.start_polling(bot,userWorker=usersdataBaseWorker)
 
     # # Проверка работы модуля записей
-    await bookingsDatabaseworker.connect()
-    await bookingsDatabaseworker.add_booking(user_id=1,
-                                       user_role="teacher",
-                                       subjects="math",
-                                       event_date=datetime.date(2026,1,20),
-                                       event_time=datetime.time(11,45),
-                                       point_type="begin",
-                                       time_type="fact")
+    # await bookingsDatabaseworker.connect()
+    # await bookingsDatabaseworker.add_booking(user_id=1,
+    #                                    user_role="teacher",
+    #                                    subjects="math",
+    #                                    event_date=datetime.date(2026,1,20),
+    #                                    event_time=datetime.time(11,45),
+    #                                    point_type="begin",
+    #                                    time_type="fact")
 
 
 
@@ -44,6 +42,7 @@ async def main():
     # await usersdataBaseWorker.add_user(2,"Кирилл")
     # await usersdataBaseWorker.update_user(1,"Степан","teacher,student","Math,Informatic")
     # await usersdataBaseWorker.delete_user(2)
+    # print((await usersdataBaseWorker.get_user(1))["user_name"])
     # print(await usersdataBaseWorker.check_user(1))
     # await usersdataBaseWorker.print_table("users")
     
