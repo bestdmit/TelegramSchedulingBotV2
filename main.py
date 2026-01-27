@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 import os
-from handlers.user_router import router as user_router
+from handlers.user_router import user_router as user_router
+from handlers.admin_router import admin_router as admin_router
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -20,7 +21,7 @@ async def main():
     usersdataBaseWorker = UsersDataBaseWorker()
     bookingsDatabaseworker = BookingsDataBaseWorker()
     await usersdataBaseWorker.connect()
-    dp.include_router(user_router)
+    dp.include_routers(admin_router,user_router)
     await dp.start_polling(bot,userWorker=usersdataBaseWorker)
 
     # # Проверка работы модуля записей

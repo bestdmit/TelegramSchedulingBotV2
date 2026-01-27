@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional,List
 from dotenv import load_dotenv
 import asyncio
 import asyncpg
@@ -159,6 +159,7 @@ class UsersDataBaseWorker:
             return (get is not None)
         except Exception as e:
             print(f"Ошибка проверки существования пользователя: {e}")
+        
     async def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Получает пользователя по ID"""
         try:
@@ -170,6 +171,19 @@ class UsersDataBaseWorker:
         except Exception as e:
             print(f"❌ Error getting user: {e}")
             return None
+        
+    async def get_simple_users(self)->Optional[List[Dict[str, Any]]]:
+        """Выдает пользователей без ролей"""
+        try:
+            async with self.pool.acquire() as conn:
+                rows = await conn.fetch(
+                "SELECT * FROM users WHERE roles = '' OR roles IS NULL"
+                )
+                return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"Проблемы с получением пользователей без ролей {e}")
+
+
     
     
     
