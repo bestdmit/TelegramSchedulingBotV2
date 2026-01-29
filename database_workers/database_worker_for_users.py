@@ -69,7 +69,7 @@ class UsersDataBaseWorker:
                     await conn.execute(query, user_id, user_name)
                 elif ("teacher" in roles.lower().split()) and (teacher_subjects != None):
                     query = """
-                        INSERT INTO users (user_id, user_name, roles, teacher_subjects) 
+                        INSERT INTO users (user_id, user_name, roles, subjects) 
                         VALUES ($1, $2, $3, $4)
                         ON CONFLICT (user_id) DO NOTHING;
                     """
@@ -111,7 +111,7 @@ class UsersDataBaseWorker:
                 counter += 1
 
             if teacher_subjects is not None:
-                updates.append(f"teacher_subjects = ${counter}")
+                updates.append(f"subjects = ${counter}")
                 values.append(teacher_subjects)
                 counter += 1
             

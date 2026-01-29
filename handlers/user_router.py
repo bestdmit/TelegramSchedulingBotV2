@@ -1,9 +1,10 @@
-from aiogram import Router, F
+from aiogram import Bot, Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
 from states.registerSteps import RegisterSteps
 from aiogram.fsm.context import FSMContext
 from database_workers.database_worker_for_users import UsersDataBaseWorker
+from config import admin_ids
 user_router = Router()
 
 @user_router.message(Command("start"))
@@ -23,9 +24,15 @@ async def delete_myself(message: Message,userWorker:UsersDataBaseWorker):
     
 
 @user_router.message(RegisterSteps.wait_user_name)
-async def process_name(message:Message,state:FSMContext,userWorker:UsersDataBaseWorker):
+async def process_name(message:Message,state:FSMContext,userWorker:UsersDataBaseWorker,bot:Bot):
     await userWorker.add_user(message.from_user.id,message.text)
     if await userWorker.check_user(message.from_user.id):
         await message.answer(f"Вы успешно добавлены,{message.text}")
+        for admin_id in admin_ids:
+            await bot.send_message(
+                chat_id=admin_id,
+                text=f"Новый зарегистрированный пользователь: {message.text}\n ID:{message.from_user.id}"
+                )
+
     else:
         await message.answer(f"Ошибка добавления")
