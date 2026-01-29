@@ -5,15 +5,23 @@ from states.registerSteps import RegisterSteps
 from aiogram.fsm.context import FSMContext
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from config import admin_ids
-user_router = Router()
+from keyboards import get_main_menu, get_no_roles_menu
+router = Router()
 
 @user_router.message(Command("start"))
 async def cmd_start(message: Message,state:FSMContext,userWorker:UsersDataBaseWorker):
+
     if (await userWorker.check_user(message.from_user.id)):
-        await message.answer(f"Привет, {(await userWorker.get_user(message.from_user.id))["user_name"]}")
+        menu = get_main_menu()
+        await message.answer(f"Привет, {(await userWorker.get_user(message.from_user.id))["user_name"]}",
+                             reply_markup = menu)
     else:
-         await message.answer("Введите своё имя:")
+         menu = get_no_roles_menu()
+         await message.answer("Введите своё имя:",
+                            reply_markup = menu  )
          await state.set_state(RegisterSteps.wait_user_name)
+         
+         
 
 @user_router.message(Command("delete"))
 async def delete_myself(message: Message,userWorker:UsersDataBaseWorker):
@@ -36,3 +44,9 @@ async def process_name(message:Message,state:FSMContext,userWorker:UsersDataBase
 
     else:
         await message.answer(f"Ошибка добавления")
+        # menu = get_main_menu()
+        # await message.answer(f"Вы успешно добавлены,{message.text}",
+        #                      reply_markup = menu)#потом нужно перенсти меню без ролей туда, где не будет ролей, а не отсутсвие полбзователя в таблице
+        # await state.clear()
+        
+        
