@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from config import admin_ids
 from keyboards import get_main_menu, get_no_roles_menu
-router = Router()
+user_router = Router()
 
 @user_router.message(Command("start"))
 async def cmd_start(message: Message,state:FSMContext,userWorker:UsersDataBaseWorker):

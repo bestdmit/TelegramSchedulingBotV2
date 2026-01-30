@@ -51,6 +51,13 @@ async def process_simple_user_click(callback: CallbackQuery,userWorker:UsersData
             text = "Добавить предметы преподавателю",
             callback_data=f"teacher_give_subjects_{user_id}"
         )
+    if ("student" in roles) and (roles == "" or roles==None):
+        current_subjects = simple_user.get("teacher_subjects", "")
+        if current_subjects==False or current_subjects=="":
+            builder.button(
+            text = "Добавить предметы ученику",
+            callback_data=f"teacher_give_subjects_{user_id}"
+        )
         
     builder.adjust(2)
     await callback.message.delete()
@@ -63,7 +70,7 @@ async def process_simple_user_click(callback: CallbackQuery,userWorker:UsersData
     else:
         user_info+=f"Роли НЕ НАЗНАЧЕНЫ\n"
 
-    if roles and "teacher" in roles:
+    if (roles and "teacher" in roles) or (roles and "student" in roles):
         subjects = simple_user.get("teacher_subjects", "")
         if subjects:
             subjects_names = []
@@ -151,14 +158,23 @@ async def process_role_save(callback: CallbackQuery, userWorker: UsersDataBaseWo
     await userWorker.update_user(user_id,user_name, roles_str)
 
     await callback.message.delete()
-    if "teacher" in final_roles:
-        await callback.message.answer(
-            f"Роли добавлены ✅\n"
-            f"Пользователь: {user_name} (ID: {user_id})\n"
-            f"Роли: {roles_str}\n"
-            f"Выберите предмет для преподавателя:",
-            reply_markup=get_subjects_keyboard(selected_subjects=set(), user_id=user_id)
-        )
+    if ("teacher" in final_roles) or ("student" in final_roles):
+        if "teacher" in final_roles:
+            await callback.message.answer(
+                f"Роли добавлены ✅\n"
+                f"Пользователь: {user_name} (ID: {user_id})\n"
+                f"Роли: {roles_str}\n"
+                f"Выберите предмет для преподавателя:",
+                reply_markup=get_subjects_keyboard(selected_subjects=set(), user_id=user_id)
+            )
+        elif "student" in final_roles:
+            await callback.message.answer(
+                f"Роли добавлены ✅\n"
+                f"Пользователь: {user_name} (ID: {user_id})\n"
+                f"Роли: {roles_str}\n"
+                f"Выберите предмет для ученика:",
+                reply_markup=get_subjects_keyboard(selected_subjects=set(), user_id=user_id)
+            )
     else:
         await callback.message.answer(
             f"Роли добавлены ✅\n"
@@ -229,7 +245,7 @@ async def process_subjects_save(callback: CallbackQuery, userWorker: UsersDataBa
                 selected_subjects.append(subject_id)
     
     if not selected_subjects:
-        await callback.answer("Нужно дать преподавателю хотя бы один предмет ", show_alert=True)
+        await callback.answer("Нужно дать пользователю хотя бы один предмет ", show_alert=True)
         return
     
     subjects_str = ",".join(selected_subjects)

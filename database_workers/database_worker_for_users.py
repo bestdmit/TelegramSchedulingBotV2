@@ -111,7 +111,7 @@ class UsersDataBaseWorker:
                 counter += 1
 
             if teacher_subjects is not None:
-                updates.append(f"subjects = ${counter}")
+                updates.append(f"teacher_subjects = ${counter}")
                 values.append(teacher_subjects)
                 counter += 1
             
