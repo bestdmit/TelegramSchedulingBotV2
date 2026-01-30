@@ -26,6 +26,12 @@ from aiogram import types
 #     )
 #     return keyboard
 
+def get_admin_menu() -> ReplyKeyboardMarkup:
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[KeyboardButton(text="Добавить/Изменить предметы")],resize_keyboard=True
+    )
+    return True
+
 #Клавиатура получения ролей?
 def get_roles_keyboard(selected_roles:set,selected_user_id:int):
     builder = InlineKeyboardBuilder()
