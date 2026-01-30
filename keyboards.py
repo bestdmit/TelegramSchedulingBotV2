@@ -1,30 +1,30 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from config import roles, Teacher_Subjects
+from config import roles, subjects
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import types
 
 #клавиатура и главное меню
-# def get_main_menu() -> ReplyKeyboardMarkup:
-#     keyboard = ReplyKeyboardMarkup(
-#         keyboard=[
-#             [KeyboardButton(text="Новая кнопка")],
-#         ],
-#         resize_keyboard=True,
-#         one_time_keyboard=True
-#     )
-#     return keyboard
+def get_main_menu() -> ReplyKeyboardMarkup:
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Новая кнопка")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return keyboard
 
 #меню без ролей
-# def get_no_roles_menu() -> ReplyKeyboardMarkup:
-#     keyboard = ReplyKeyboardMarkup(
-#         keyboard=[
-#             [KeyboardButton(text="Обратиться к администратору")],
-#             [KeyboardButton(text="Проверить наличие ролей")]
-#         ],
-#         resize_keyboard=True,
-#         one_time_keyboard=True
-#     )
-#     return keyboard
+def get_no_roles_menu() -> ReplyKeyboardMarkup:
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Обратиться к администратору")],
+            [KeyboardButton(text="Проверить наличие ролей")]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    return keyboard
 
 def get_admin_menu() -> ReplyKeyboardMarkup:
     keyboard = ReplyKeyboardMarkup(
@@ -57,7 +57,7 @@ def get_roles_keyboard(selected_roles:set,selected_user_id:int):
 def get_subjects_keyboard(selected_subjects: set, user_id: int):
     builder = InlineKeyboardBuilder()
     
-    for subject_id, subject_name in Teacher_Subjects.items():
+    for subject_id, subject_name in subjects.items():
         label = f"{subject_name}"
         if subject_id in selected_subjects:
             label = "✅ " + label

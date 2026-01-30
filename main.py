@@ -8,6 +8,7 @@ from aiogram.filters import Command
 import os
 from handlers.user_router import user_router as user_router
 from handlers.admin_router import admin_router as admin_router
+from commands import set_special_menu
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -20,8 +21,14 @@ print("start")
 async def main():
     usersdataBaseWorker = UsersDataBaseWorker()
     bookingsDatabaseworker = BookingsDataBaseWorker()
+
+    await usersdataBaseWorker.add_user(1,"цуоруамуцоауцо")
+    await usersdataBaseWorker.add_user(2,"Кирилл")
+    await usersdataBaseWorker.update_user(1,"Степан","teacher,student","Math,Informatic")
+
     await usersdataBaseWorker.connect()
     dp.include_routers(admin_router,user_router)
+    dp.startup.register(set_special_menu)
     await dp.start_polling(bot,userWorker=usersdataBaseWorker)
 
     # # Проверка работы модуля записей

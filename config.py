@@ -1,6 +1,6 @@
 admin_ids = [973231400, 1180878673]
 roles=["teacher","student"]
-Teacher_Subjects = {
+subjects = {
     "1": "Математика",
     "2": "Физика",
     "3": "Информатика",

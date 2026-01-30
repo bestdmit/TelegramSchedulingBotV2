@@ -6,7 +6,7 @@ from states.registerSteps import RegisterSteps
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from database_workers.database_worker_for_users import UsersDataBaseWorker
-from config import admin_ids,roles, Teacher_Subjects
+from config import admin_ids,roles, subjects
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton,CallbackQuery
 from keyboards import get_subjects_keyboard, get_roles_keyboard
@@ -37,7 +37,7 @@ async def process_simple_user_click(callback: CallbackQuery,userWorker:UsersData
     user_id = callback.data.split("_")[-1]
     simple_user = await userWorker.get_user(int(user_id))
     roles = simple_user["roles"]
-    teacher_subjects = simple_user["teacher_subjects"]
+    subjects = simple_user["subjects"]
 
     builder = InlineKeyboardBuilder()
     if roles == "" or roles == None:
@@ -46,14 +46,14 @@ async def process_simple_user_click(callback: CallbackQuery,userWorker:UsersData
             callback_data=f"simple_user_give_role_{user_id}"
         )
     if ("teacher" in roles) and (roles == "" or roles==None):
-        current_subjects = simple_user.get("teacher_subjects", "")
+        current_subjects = simple_user.get("subjects", "")
         if current_subjects==False or current_subjects=="":
             builder.button(
             text = "Добавить предметы преподавателю",
             callback_data=f"teacher_give_subjects_{user_id}"
         )
     if ("student" in roles) and (roles == "" or roles==None):
-        current_subjects = simple_user.get("teacher_subjects", "")
+        current_subjects = simple_user.get("subjects", "")
         if current_subjects==False or current_subjects=="":
             builder.button(
             text = "Добавить предметы ученику",
@@ -72,12 +72,12 @@ async def process_simple_user_click(callback: CallbackQuery,userWorker:UsersData
         user_info+=f"Роли НЕ НАЗНАЧЕНЫ\n"
 
     if (roles and "teacher" in roles) or (roles and "student" in roles):
-        subjects = simple_user.get("teacher_subjects", "")
+        subjects = simple_user.get("subjects", "")
         if subjects:
             subjects_names = []
             for Sub_Id in subjects.split(','):
                 if Sub_Id.strip():
-                    subjects_names.append(Teacher_Subjects.get(Sub_Id, f"Предмет {Sub_Id}"))
+                    subjects_names.append(subjects.get(Sub_Id, f"Предмет {Sub_Id}"))
             user_info += f"Предметы: {', '.join(subjects_names)}\n"
         else:
             user_info+=f"Предметы не назначены\n"
@@ -213,13 +213,13 @@ async def process_subjects_save(callback: CallbackQuery, userWorker: UsersDataBa
     
     success = await userWorker.update_user(
         user_id=user_id,
-        teacher_subjects=subjects_str
+        subjects=subjects_str
     )
     
     if success:
         subject_names = []
         for subj_id in selected_subjects:
-            subject_names.append(Teacher_Subjects.get(subj_id, f"Предмет {subj_id}"))
+            subject_names.append(subjects.get(subj_id, f"Предмет {subj_id}"))
         
         await callback.message.delete()
         await callback.message.answer(
@@ -233,3 +233,21 @@ async def process_subjects_save(callback: CallbackQuery, userWorker: UsersDataBa
         await callback.answer("Ошибка при сохранении предметов!", show_alert=True)
     
     await callback.answer()
+
+
+@admin_router.message(Command("all_users"))
+async def show_all_users(message: Message,userWorker:UsersDataBaseWorker):
+    users = await userWorker.get_all_users()
+    builder = InlineKeyboardBuilder()
+
+    for user in users:
+        builder.button(
+            text=user['user_name'],
+            callback_data=f"user_info_{user['user_id']}"
+        )
+    builder.adjust(1)
+
+    await message.answer(
+        "Список всех пользователей",
+        reply_markup=builder.as_markup()
+    )

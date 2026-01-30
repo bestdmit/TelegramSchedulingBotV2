@@ -52,7 +52,7 @@ class UsersDataBaseWorker:
             print(f"Проблема с демонстрацией таблицы {tableName}")
     
     async def add_user(self,user_id:int,user_name:str,
-                       roles:str = None,teacher_subjects:str = None,
+                       roles:str = None,subjects:str = None,
                        created_at:datetime = None,updated_at:datetime = None)->bool:
         """Добавляет пользователя"""
         try:
@@ -67,13 +67,13 @@ class UsersDataBaseWorker:
                         ON CONFLICT (user_id) DO NOTHING;
                     """
                     await conn.execute(query, user_id, user_name)
-                elif ("teacher" in roles.lower().split()) and (teacher_subjects != None):
+                elif ("teacher" in roles.lower().split()) and (subjects != None):
                     query = """
                         INSERT INTO users (user_id, user_name, roles, subjects) 
                         VALUES ($1, $2, $3, $4)
                         ON CONFLICT (user_id) DO NOTHING;
                     """
-                    await conn.execute(query,user_id,user_name,roles,teacher_subjects)
+                    await conn.execute(query,user_id,user_name,roles,subjects)
                 else:
                     query = """
                         INSERT INTO users (user_id, user_name, roles) 
@@ -89,7 +89,7 @@ class UsersDataBaseWorker:
             return False
             
     async def update_user(self,user_id:int,user_name:str = None,
-                       roles:str = None,teacher_subjects:str = None,
+                       roles:str = None,subjects:str = None,
                        created_at:datetime = None,updated_at:datetime = None)->bool:
         """Обновляет данные пользователя(кроме id)"""
         try:
@@ -110,9 +110,9 @@ class UsersDataBaseWorker:
                 values.append(roles)
                 counter += 1
 
-            if teacher_subjects is not None:
-                updates.append(f"teacher_subjects = ${counter}")
-                values.append(teacher_subjects)
+            if subjects is not None:
+                updates.append(f"subjects = ${counter}")
+                values.append(subjects)
                 counter += 1
             
             if not updates:
@@ -182,6 +182,18 @@ class UsersDataBaseWorker:
                 return [dict(row) for row in rows]
         except Exception as e:
             print(f"Проблемы с получением пользователей без ролей {e}")
+
+    async def get_all_users(self)->Optional[List[Dict[str, Any]]]:
+        """Выдает всех пользователей"""
+        try:
+            async with self.pool.acquire() as conn:
+                rows = await conn.fetch(
+                "SELECT * FROM users"
+                )
+                return [dict(row) for row in rows]
+        except Exception as e:
+            print(f"Проблемы с получением всех пользователей {e}")
+
 
 
     
