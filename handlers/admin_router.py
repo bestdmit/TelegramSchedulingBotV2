@@ -9,6 +9,7 @@ from database_workers.database_worker_for_users import UsersDataBaseWorker
 from config import admin_ids,roles, Teacher_Subjects
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton,CallbackQuery
+from keyboards import get_subjects_keyboard, get_roles_keyboard
 
 
 admin_router = Router()
@@ -95,26 +96,6 @@ async def process_give_role(callback: CallbackQuery,userWorker:UsersDataBaseWork
     )
 
 
-def get_roles_keyboard(selected_roles:set,selected_user_id:int):#тоже надо будет перенести в keyboard хз
-    builder = InlineKeyboardBuilder()
-
-    for role in roles:
-        label = f"{role}"
-        if role in selected_roles:
-            label = "✅ "+label
-        builder.button(
-            text = label,
-            callback_data=f"role_tgl:{selected_user_id}:{role}"
-        )
-    builder.adjust(2)
-
-    builder.row(types.InlineKeyboardButton(
-        text="Применить ✅", 
-        callback_data=f"role_save:{selected_user_id}"
-        )
-    )
-    return builder.as_markup()
-
 @admin_router.callback_query(F.data.startswith("role_tgl:"))
 async def process_role_toggle(callback: CallbackQuery):
     parts = callback.data.split(":")
@@ -187,27 +168,7 @@ async def process_role_save(callback: CallbackQuery, userWorker: UsersDataBaseWo
     # )
     await callback.answer()
 
-def get_subjects_keyboard(selected_subjects: set, user_id: int):#нужно будет перенести в keybords.py после слияния
-    builder = InlineKeyboardBuilder()
-    
-    for subject_id, subject_name in Teacher_Subjects.items():
-        label = f"{subject_name}"
-        if subject_id in selected_subjects:
-            label = "✅ " + label
-        
-        builder.button(
-            text=label,
-            callback_data=f"subject_tgl:{user_id}:{subject_id}"
-        )
-    
-    builder.adjust(2)
-    
-    builder.row(types.InlineKeyboardButton(
-        text="✅ Сохранить предметы",
-        callback_data=f"subjects_save:{user_id}"
-    ))
-    
-    return builder.as_markup()
+
     
 @admin_router.callback_query(F.data.startswith("subject_tgl:"))
 async def process_subject_toggle(callback: CallbackQuery):
