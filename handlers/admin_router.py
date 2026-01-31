@@ -56,54 +56,12 @@ async def process_subjects_save_handler(callback: CallbackQuery, userWorker: Use
     await service.process_subjects_save(callback=callback)
 
 @admin_router.message(Command("all_users"))
-async def show_all_users(message: Message,userWorker:UsersDataBaseWorker):
-    users = await userWorker.get_all_users()
-    builder = InlineKeyboardBuilder()
-
-    for user in users:
-        builder.button(
-            text=user['user_name'],
-            callback_data=f"registered_user_info_{user['user_id']}"
-        )
-    builder.adjust(1)
-
-    await message.answer(
-        "Список всех пользователей",
-        reply_markup=builder.as_markup()
-    )
+async def show_all_users_handler(message: Message,userWorker:UsersDataBaseWorker):
+    all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
+    await all_service.show_all_users(message=message)
 
 @admin_router.callback_query(F.data.startswith("registered_user_info"))
-async def process_redistered_user_click(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
-    user_id = callback.data.split("_")[-1]
-    reg_user = await userWorker.get_user(int(user_id))
-    roles = reg_user["roles"]
-    subjects = reg_user["subjects"]
-
-    builder = InlineKeyboardBuilder()
-    builder.button(
-        text = "Роли",
-        callback_data=f"registered_user_give_role_{user_id}"
-    )
+async def process_redistered_user_click_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
+    all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
+    await all_service.process_redistered_user_click(callback=callback)
     
-    builder.button(
-        text = "Предметы",
-        callback_data=f"registered_user_subjects_{user_id}"
-    )
-        
-    builder.adjust(2)
-    await callback.message.delete()
-    await callback.answer()
-
-    user_info = f"Пользователь: {reg_user['user_name']}\n"
-    user_info+=f"User Id: {user_id}\n"
-    if len(roles)>0:
-        user_info+=f"Роли: {roles}\n"
-    else:
-        user_info+=f"Роли НЕ НАЗНАЧЕНЫ\n"
-    if subjects:
-        user_info+=f"Предметы: {subjects}\n"
-    else:
-        ser_info+=f"Предметы НЕ НАЗНАЧЕНЫ\n"
-    await callback.message.answer(
-        user_info,
-        reply_markup=builder.as_markup())
