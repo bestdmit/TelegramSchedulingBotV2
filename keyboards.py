@@ -7,7 +7,7 @@ from aiogram import types
 def get_main_menu() -> ReplyKeyboardMarkup:
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Новая кнопка")],
+            [KeyboardButton(text="Забронировать время")],
         ],
         resize_keyboard=True,
         one_time_keyboard=True
