@@ -2,7 +2,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from config import subjects
-from keyboards import change_roles_keyboard
+from keyboards import change_roles_keyboard,change_subjects_keyboard
 
 class AllUserServices:
     """Работа со списком всех пользователей"""
@@ -30,7 +30,8 @@ class AllUserServices:
         user_id = callback.data.split("_")[-1]
         reg_user = await self.user_worker.get_user(int(user_id))
         roles = reg_user["roles"]
-        subjects = reg_user["subjects"]
+        number_subjects = reg_user["subjects"].split(',')
+        user_subjects = ','.join([subjects[x] for x in number_subjects])
 
         builder = InlineKeyboardBuilder()
         builder.button(
@@ -54,7 +55,7 @@ class AllUserServices:
         else:
             user_info+=f"Роли НЕ НАЗНАЧЕНЫ\n"
         if subjects:
-            user_info+=f"Предметы: {subjects}\n"
+            user_info+=f"Предметы: {user_subjects}\n"
         else:
             ser_info+=f"Предметы НЕ НАЗНАЧЕНЫ\n"
         await callback.message.answer(
@@ -64,10 +65,10 @@ class AllUserServices:
     async def process_change_role(self,callback: CallbackQuery):
         user_id = int(callback.data.split("_")[-1])
         user = await self.user_worker.get_user(user_id)
-        
+        roles = user["roles"].split(',')
         await callback.message.answer(
             "Выберите новые роли:",
-            reply_markup=change_roles_keyboard(selected_roles=set(),selected_user_id=user_id)
+            reply_markup=change_roles_keyboard(selected_roles=set(roles),selected_user_id=user_id)
         )
 
     async def process_role_toggle(self,callback: CallbackQuery):
@@ -112,4 +113,74 @@ class AllUserServices:
         await callback.message.answer(
             f"Роли Обновлены!\nПользователь ID {user_id}\nРоли: {roles_str}"
         )
-        # await callback.answer()
+    
+    async def process_change_subjects(self,callback: CallbackQuery):
+        user_id = int(callback.data.split("_")[-1])
+        user = await self.user_worker.get_user(user_id)
+        subjects = user["subjects"].split(",")
+        await callback.message.answer(
+            f"Выбранный пользователь:{user["user_name"]}\nВыберите новые предметы:",
+            reply_markup=change_subjects_keyboard(selected_subjects=set(subjects),user_id=user_id)
+        )
+
+    async def process_subject_toggle(self,callback: CallbackQuery):
+        parts = callback.data.split(":")
+        user_id = int(parts[1])
+        clicked_subject_id = parts[2]
+        
+        selected_subjects = set()
+        for row in callback.message.reply_markup.inline_keyboard:
+            for btn in row:
+                if btn.callback_data.startswith("changed_subject_tgl:"):
+                    subject_id = btn.callback_data.split(":")[-1]
+                    if "✅" in btn.text:
+                        selected_subjects.add(subject_id)
+        if clicked_subject_id in selected_subjects:
+            selected_subjects.remove(clicked_subject_id)
+        else:
+            selected_subjects.add(clicked_subject_id)
+        
+        await callback.message.edit_reply_markup(
+            reply_markup=change_subjects_keyboard(selected_subjects, user_id)
+        )
+        await callback.answer()
+
+    async def process_subjects_save(self,callback: CallbackQuery):
+        user_id = int(callback.data.split(":")[-1])
+        user = await self.user_worker.get_user(user_id)
+        
+        selected_subjects = []
+        for row in callback.message.reply_markup.inline_keyboard:
+            for btn in row:
+                if btn.callback_data.startswith("changed_subject_tgl:") and "✅" in btn.text:
+                    subject_id = btn.callback_data.split(":")[-1]
+                    selected_subjects.append(subject_id)
+        
+        if not selected_subjects:
+            await callback.answer("Нужно дать пользователю хотя бы один предмет ", show_alert=True)
+            return
+        
+        subjects_str = ",".join(selected_subjects)
+        
+        success = await self.user_worker.update_user(
+            user_id=user_id,
+            subjects=subjects_str
+        )
+        
+        if success:
+            subject_names = []
+            for subj_id in selected_subjects:
+                subject_names.append(subjects.get(subj_id, f"Предмет {subj_id}"))
+            
+            await callback.message.delete()
+            await callback.message.answer(
+                f"✅ Предметы успешно Изменены!\n\n"
+                f"Пользователь: {user['user_name']}\n"
+                f"User ID: {user_id}\n"
+                f"Предметы: {', '.join(subject_names)}\n"
+                f"ID предметов: {subjects_str}"
+            )
+        else:
+            await callback.answer("Ошибка при сохранении предметов!", show_alert=True)
+        
+        await callback.answer()

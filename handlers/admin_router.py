@@ -65,6 +65,7 @@ async def process_redistered_user_click_handler(callback: CallbackQuery,userWork
     all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
     await all_service.process_redistered_user_click(callback=callback)
 
+# Обработка смены ролей
 @admin_router.callback_query(F.data.startswith("registered_user_change_role"))
 async def process_give_role_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
     all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
@@ -79,4 +80,22 @@ async def changed_process_role_toggle_handler(callback: CallbackQuery,userWorker
 async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
     service = AdminServicesFactory.create_admin_service_for_all_users(userWorker)
     await service.process_role_save(callback=callback)
+
+# Обработка смены предметов
+
+@admin_router.callback_query(F.data.startswith("registered_user_change_subjects"))
+async def process_change_subjects_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
+    all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
+    await all_service.process_change_subjects(callback=callback)
     
+@admin_router.callback_query(F.data.startswith("changed_subject_tgl"))
+async def process_subject_toggle_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
+    all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
+    await all_service.process_subject_toggle(callback=callback)
+
+@admin_router.callback_query(F.data.startswith("changed_subjects_save:"))
+async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
+    service = AdminServicesFactory.create_admin_service_for_all_users(userWorker)
+    await service.process_subjects_save(callback=callback)
+
+

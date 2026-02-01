@@ -97,3 +97,26 @@ def change_roles_keyboard(selected_roles:set,selected_user_id:int):
         )
     )
     return builder.as_markup()
+
+def change_subjects_keyboard(selected_subjects: set, user_id: int):
+    '''Клавиатура изменения предметов'''
+    builder = InlineKeyboardBuilder()
+    
+    for subject_id, subject_name in subjects.items():
+        label = f"{subject_name}"
+        if subject_id in selected_subjects:
+            label = "✅ " + label
+        
+        builder.button(
+            text=label,
+            callback_data=f"changed_subject_tgl:{user_id}:{subject_id}"
+        )
+    
+    builder.adjust(2)
+    
+    builder.row(types.InlineKeyboardButton(
+        text="✅ Сохранить предметы",
+        callback_data=f"changed_subjects_save:{user_id}"
+    ))
+    
+    return builder.as_markup()
