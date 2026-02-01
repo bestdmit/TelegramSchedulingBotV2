@@ -2,7 +2,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from config import subjects
-from keyboards import get_subjects_keyboard, get_roles_keyboard
+from keyboards import change_roles_keyboard
 
 class AllUserServices:
     """Работа со списком всех пользователей"""
@@ -35,12 +35,12 @@ class AllUserServices:
         builder = InlineKeyboardBuilder()
         builder.button(
             text = "Роли",
-            callback_data=f"registered_user_give_role_{user_id}"
+            callback_data=f"registered_user_change_role_{user_id}"
         )
         
         builder.button(
             text = "Предметы",
-            callback_data=f"registered_user_subjects_{user_id}"
+            callback_data=f"registered_user_change_subjects_{user_id}"
         )
             
         builder.adjust(2)
@@ -60,3 +60,56 @@ class AllUserServices:
         await callback.message.answer(
             user_info,
             reply_markup=builder.as_markup())
+        
+    async def process_change_role(self,callback: CallbackQuery):
+        user_id = int(callback.data.split("_")[-1])
+        user = await self.user_worker.get_user(user_id)
+        
+        await callback.message.answer(
+            "Выберите новые роли:",
+            reply_markup=change_roles_keyboard(selected_roles=set(),selected_user_id=user_id)
+        )
+
+    async def process_role_toggle(self,callback: CallbackQuery):
+        parts = callback.data.split(":")
+        user_id = int(parts[1])
+        clicked_role = parts[2]
+
+        selected_roles = set()
+        
+        for row in callback.message.reply_markup.inline_keyboard:
+            for btn in row:
+                if btn.callback_data.startswith("changed_role_tgl:"):
+                    role_name = btn.callback_data.split(":")[-1]
+                    if "✅" in btn.text:
+                        selected_roles.add(role_name)
+
+        if clicked_role in selected_roles:
+            selected_roles.remove(clicked_role)
+        else:
+            selected_roles.add(clicked_role)
+
+        await callback.message.edit_reply_markup(
+            reply_markup=change_roles_keyboard(selected_roles, user_id)
+        )
+        await callback.answer()
+
+    async def process_role_save(self,callback: CallbackQuery):
+        user_id = int(callback.data.split(":")[-1])
+        user_name = (await self.user_worker.get_user(user_id))["user_name"]
+        final_roles = []
+        for row in callback.message.reply_markup.inline_keyboard:
+            for btn in row:
+                if btn.callback_data.startswith("changed_role_tgl:") and "✅" in btn.text:
+                    final_roles.append(btn.callback_data.split(":")[-1])
+
+        if not final_roles:
+            await callback.answer("Выберите хотя бы одну роль!", show_alert=True)
+            return
+        
+        roles_str = ",".join(final_roles)
+        await self.user_worker.update_user(user_id,user_name, roles_str)
+        await callback.message.answer(
+            f"Роли Обновлены!\nПользователь ID {user_id}\nРоли: {roles_str}"
+        )
+        # await callback.answer()

@@ -75,3 +75,25 @@ def get_subjects_keyboard(selected_subjects: set, user_id: int):
     ))
     
     return builder.as_markup()
+
+
+def change_roles_keyboard(selected_roles:set,selected_user_id:int):
+    '''Клавиатура изменения ролей'''
+    builder = InlineKeyboardBuilder()
+
+    for role in roles:
+        label = f"{role}"
+        if role in selected_roles:
+            label = "✅ "+label
+        builder.button(
+            text = label,
+            callback_data=f"changed_role_tgl:{selected_user_id}:{role}"
+        )
+    builder.adjust(2)
+
+    builder.row(types.InlineKeyboardButton(
+        text="Применить ✅", 
+        callback_data=f"changed_role_save:{selected_user_id}"
+        )
+    )
+    return builder.as_markup()

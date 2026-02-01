@@ -42,8 +42,6 @@ async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDa
     service = AdminServicesFactory.create_admin_service_for_simple_users(userWorker)
     await service.process_role_save(callback=callback)
 
-
-    
 @admin_router.callback_query(F.data.startswith("subject_tgl:"))
 async def process_subject_toggle_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
     service = AdminServicesFactory.create_admin_service_for_simple_users(userWorker)
@@ -55,6 +53,8 @@ async def process_subjects_save_handler(callback: CallbackQuery, userWorker: Use
     service = AdminServicesFactory.create_admin_service_for_simple_users(userWorker)
     await service.process_subjects_save(callback=callback)
 
+
+#Обработка списка всех пользователей
 @admin_router.message(Command("all_users"))
 async def show_all_users_handler(message: Message,userWorker:UsersDataBaseWorker):
     all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
@@ -64,4 +64,19 @@ async def show_all_users_handler(message: Message,userWorker:UsersDataBaseWorker
 async def process_redistered_user_click_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
     all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
     await all_service.process_redistered_user_click(callback=callback)
+
+@admin_router.callback_query(F.data.startswith("registered_user_change_role"))
+async def process_give_role_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
+    all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
+    await all_service.process_change_role(callback=callback)
+
+@admin_router.callback_query(F.data.startswith("changed_role_tgl"))
+async def changed_process_role_toggle_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
+    all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
+    await all_service.process_role_toggle(callback=callback)
+
+@admin_router.callback_query(F.data.startswith("changed_role_save:"))
+async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
+    service = AdminServicesFactory.create_admin_service_for_all_users(userWorker)
+    await service.process_role_save(callback=callback)
     
