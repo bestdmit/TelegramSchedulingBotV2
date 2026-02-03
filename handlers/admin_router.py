@@ -11,6 +11,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton,CallbackQuery
 from keyboards import get_subjects_keyboard, get_roles_keyboard
 from admin_scenariors.adminFactory import AdminServicesFactory
+from aiogram import Bot
 
 admin_router = Router()
 admin_router.message.filter(F.from_user.id.in_(admin_ids))
@@ -38,9 +39,9 @@ async def process_role_toggle_handler(callback: CallbackQuery,userWorker:UsersDa
     await service.process_role_toggle(callback=callback)
 
 @admin_router.callback_query(F.data.startswith("role_save:"))
-async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
+async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker, bot: Bot):
     service = AdminServicesFactory.create_admin_service_for_simple_users(userWorker)
-    await service.process_role_save(callback=callback)
+    await service.process_role_save(callback=callback, bot = bot)
 
 
     
@@ -51,9 +52,9 @@ async def process_subject_toggle_handler(callback: CallbackQuery, userWorker: Us
     
 
 @admin_router.callback_query(F.data.startswith("subjects_save:"))
-async def process_subjects_save_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
+async def process_subjects_save_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker, bot: Bot):
     service = AdminServicesFactory.create_admin_service_for_simple_users(userWorker)
-    await service.process_subjects_save(callback=callback)
+    await service.process_subjects_save(callback=callback, bot = bot)
 
 @admin_router.message(Command("all_users"))
 async def show_all_users(message: Message,userWorker:UsersDataBaseWorker):
@@ -103,7 +104,7 @@ async def process_redistered_user_click(callback: CallbackQuery,userWorker:Users
     if subjects:
         user_info+=f"Предметы: {subjects}\n"
     else:
-        ser_info+=f"Предметы НЕ НАЗНАЧЕНЫ\n"
+        user_info+=f"Предметы НЕ НАЗНАЧЕНЫ\n"
     await callback.message.answer(
         user_info,
         reply_markup=builder.as_markup())

@@ -10,7 +10,7 @@ def get_main_menu() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="Забронировать время")],
         ],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=False
     )
     return keyboard
 

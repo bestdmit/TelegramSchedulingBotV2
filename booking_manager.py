@@ -66,7 +66,7 @@ class BookingManager:
             message+="Ученик \n"
         elif "teacher" in roles:
             message+="Вам назначены роли: \n"
-            message+="Преподаватель, \n"
+            message+="Преподаватель \n"
         elif "student" in roles:
             message+="Вам назначены роли: \n"
             message+="Ученик \n"
