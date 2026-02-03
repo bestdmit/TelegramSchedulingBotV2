@@ -3,7 +3,10 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from booking_manager import start_booking_for_user
-
+from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback
+import datetime
+from keyboards import create_calendar_keyboard
+from typesClasses.CalendarClick import CalendarClick
 booking_router = Router()
 
 @booking_router.message(F.text == "Забронировать время")
@@ -45,8 +48,10 @@ async def show_booking_options(message: Message, user_data: dict):
 
 @booking_router.callback_query(F.data == "booking_teacher")
 async def handle_teacher_booking(callback: CallbackQuery):
-    await callback.message.answer("Вы выбрали режим преподавателя")
-    await callback.answer()
+    await callback.message.answer(
+        text="Вы выбрали режим преподавателя",
+        reply_markup= create_calendar_keyboard(datetime.datetime.now().year,datetime.datetime.now().month)
+        )
 
 @booking_router.callback_query(F.data == "booking_student")
 async def handle_student_booking(callback: CallbackQuery):
@@ -58,3 +63,17 @@ async def handle_booking_cancel(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.answer("Бронирование отменено")
     await callback.answer()
+
+@booking_router.callback_query(CalendarClick.filter())
+async def process_calendar_selection(callback: CallbackQuery, callback_data: CalendarClick):
+    if callback_data.action == "ignore":
+        await callback.answer()
+        return
+    elif callback_data.action in ["prev","next"]:
+        await callback.message.edit_reply_markup(
+            reply_markup=create_calendar_keyboard(callback_data.year,callback_data.month)
+        )
+    else:
+        date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
+        await callback.message.answer(f"Вы выбрали дату: {date_str}")
+        await callback.answer()
