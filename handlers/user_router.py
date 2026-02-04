@@ -41,9 +41,10 @@ async def process_name(message:Message,state:FSMContext,userWorker:UsersDataBase
                 chat_id=admin_id,
                 text=f"Новый зарегистрированный пользователь: {message.text}\n ID:{message.from_user.id}"
                 )
-
+        await state.clear()
     else:
         await message.answer(f"Ошибка добавления")
+        await state.clear()
         # menu = get_main_menu()
         # await message.answer(f"Вы успешно добавлены,{message.text}",
         #                      reply_markup = menu)#потом нужно перенсти меню без ролей туда, где не будет ролей, а не отсутсвие полбзователя в таблице

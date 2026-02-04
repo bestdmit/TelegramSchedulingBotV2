@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from booking_manager import start_booking_for_user
-from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback
+# from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback
 import datetime
 from keyboards import create_calendar_keyboard
 from typesClasses.CalendarClick import CalendarClick
