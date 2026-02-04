@@ -5,6 +5,7 @@ from aiogram import types
 import calendar
 from datetime import datetime
 from typesClasses.CalendarClick import CalendarClick
+from typesClasses.TimeClick import TimeClick, get_working_hours_for_date
 #клавиатура и главное меню
 def get_main_menu() -> ReplyKeyboardMarkup:
     keyboard = ReplyKeyboardMarkup(
@@ -129,5 +130,55 @@ def create_calendar_keyboard(year:int,month:int):
                                                                   month=next_month).pack())
     )
 
+    return builder.as_markup()
+
+def create_time_keyboard(selected_date: datetime.date):
+    builder = InlineKeyboardBuilder()
+    work_hours = get_working_hours_for_date(selected_date)
+    start_hour = work_hours["start_hour"]
+    end_hour = work_hours["end_hour"]
+
+    time_slots = []
+    current_hour = start_hour
+    today = datetime.now().date
+    now = datetime.now()
+    is_today = selected_date == today
+    
+    while current_hour <= end_hour:
+        for minute in [0, 15, 30, 45]:
+            if current_hour == end_hour and minute > 0:
+                continue
+            
+            if is_today:
+                slot_time = datetime(now.year, now.month, now.day, current_hour, minute)
+                if slot_time <= now:
+                    continue
+            
+            time_slots.append((current_hour, minute))
+        
+        current_hour += 1
+    
+    buttons = []
+    for hour, minute in time_slots:
+        buttons.append(InlineKeyboardButton(
+            text=f"{hour:02d}:{minute:02d}",
+            callback_data=TimeClick(
+                action="select",
+                hour=hour,
+                minute=minute,
+                year=selected_date.year,
+                month=selected_date.month,
+                day=selected_date.day
+            ).pack()
+        ))
+    
+    for i in range(0, len(buttons), 4):
+        builder.row(*buttons[i:i+4])
+    
+    builder.row(InlineKeyboardButton(
+        text="Назад к календарю",
+        callback_data=TimeClick(action="back", hour=0, minute=0).pack()
+    ))
+    
     return builder.as_markup()
 

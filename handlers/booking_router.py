@@ -5,8 +5,10 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from booking_manager import start_booking_for_user
 # from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback
 import datetime
-from keyboards import create_calendar_keyboard
+from datetime import date
+from keyboards import create_calendar_keyboard, create_time_keyboard
 from typesClasses.CalendarClick import CalendarClick
+from typesClasses.TimeClick import TimeClick, get_day_info
 booking_router = Router()
 
 @booking_router.message(F.text == "Забронировать время")
@@ -73,7 +75,57 @@ async def process_calendar_selection(callback: CallbackQuery, callback_data: Cal
         await callback.message.edit_reply_markup(
             reply_markup=create_calendar_keyboard(callback_data.year,callback_data.month)
         )
-    else:
-        date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
-        await callback.message.answer(f"Вы выбрали дату: {date_str}")
+    elif callback_data.action == "day":
+        selected_date = date(callback_data.year, callback_data.month, callback_data.day)
+        day_info = get_day_info(selected_date)
+        await callback.message.edit_text(
+            f"{day_info["day_name"]}, {callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}\n"
+            f"Время работы: {day_info["hours_str"]}\n"
+            f"Выберите время: ",
+            reply_markup=create_time_keyboard(selected_date)
+
+        )
         await callback.answer()
+    # else:
+    #     date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
+    #     await callback.message.answer(f"Вы выбрали дату: {date_str}")
+    #     await callback.answer()
+
+@booking_router.callback_query(TimeClick.filter())
+async def process_time_selection(callback: CallbackQuery, callback_data: TimeClick, state: FSMContext, userWorker):
+    if callback_data.action == "back":
+        today = datetime.now()
+        await callback.message.edit_text(
+            "Выберите дату для записи: ",
+            reply_markup=create_calendar_keyboard(today.year, today.month)
+        )
+    elif callback_data.action == "select":
+        selected_date = date(callback_data.year, callback_data.month, callback_data.day)
+        date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
+        time_str = f"{callback_data.hour:02d}:{callback_data.minute:02d}"
+        
+        user_data = await userWorker.get_user(callback.from_user.id)
+        if user_data:
+            builder = InlineKeyboardBuilder()
+            builder.button(
+                text="Подтвердить",
+                callback_data=f"confirm_booking:{date_str}:{time_str}"
+            )
+            builder.button(
+                text="Отмена",
+                callback_data="booking_cancel"
+            )
+            builder.adjust(1)
+            
+            day_info = get_day_info(selected_date)
+            await callback.message.edit_text(
+                f"Подтверждение:\n\n"
+                f"{day_info['day_name']}, {date_str}\n"
+                f"Время: {time_str}\n"
+                f"Ваше имя: {user_data.get('user_name', '')}\n"
+                f"Ваши предметы: {user_data.get('subjects', '')}\n\n"
+                f"Всё верно?",
+                reply_markup=builder.as_markup()
+            )
+    
+    await callback.answer()
