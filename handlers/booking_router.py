@@ -9,6 +9,8 @@ from datetime import date
 from keyboards import create_calendar_keyboard, create_time_keyboard
 from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick, get_day_info
+from aiogram.fsm.state import StatesGroup, State
+from states.BookingStates import BookingStates
 booking_router = Router()
 
 @booking_router.message(F.text == "Забронировать время")
@@ -99,33 +101,51 @@ async def process_time_selection(callback: CallbackQuery, callback_data: TimeCli
             "Выберите дату для записи: ",
             reply_markup=create_calendar_keyboard(today.year, today.month)
         )
-    elif callback_data.action == "select":
+        return
+
+    if callback_data.action == "select":
         selected_date = date(callback_data.year, callback_data.month, callback_data.day)
-        date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
-        time_str = f"{callback_data.hour:02d}:{callback_data.minute:02d}"
+        new_time = f"{callback_data.hour:02d}:{callback_data.minute:02d}"
+        
+        data = await state.get_data()
+        start = data.get("start_time")
+        end = data.get("end_time")
+
+        # Логика переключения слотов
+        if not start or (start and end):
+            start, end = new_time, None
+        else:
+            if new_time > start:
+                end = new_time
+            else:
+                start, end = new_time, None
+
+        await state.update_data(start_time=start, end_time=end)
+
+        await callback.message.edit_reply_markup(
+            reply_markup=create_time_keyboard(selected_date, start, end)
+        )
+
+    # Обработка нажатия "Подтвердить"
+    elif callback_data.action == "confirm":
+        data = await state.get_data()
+        start = data.get("start_time")
+        end = data.get("end_time")
         
         user_data = await userWorker.get_user(callback.from_user.id)
-        if user_data:
-            builder = InlineKeyboardBuilder()
-            builder.button(
-                text="Подтвердить",
-                callback_data=f"confirm_booking:{date_str}:{time_str}"
-            )
-            builder.button(
-                text="Отмена",
-                callback_data="booking_cancel"
-            )
-            builder.adjust(1)
-            
-            day_info = get_day_info(selected_date)
-            await callback.message.edit_text(
-                f"Подтверждение:\n\n"
-                f"{day_info['day_name']}, {date_str}\n"
-                f"Время: {time_str}\n"
-                f"Ваше имя: {user_data.get('user_name', '')}\n"
-                f"Ваши предметы: {user_data.get('subjects', '')}\n\n"
-                f"Всё верно?",
-                reply_markup=builder.as_markup()
-            )
-    
+        date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
+        
+        builder = InlineKeyboardBuilder()
+        builder.button(text="✅ Да, записать", callback_data="final_confirm")
+        builder.button(text="❌ Отмена", callback_data="booking_cancel")
+        
+        await callback.message.edit_text(
+            f"📍 Подтверждение бронирования:\n\n"
+            f"Дата: {date_str}\n"
+            f"Интервал: {start} — {end}\n"
+            f"Имя: {user_data.get('user_name')}\n\n"
+            f"Бронируем этот промежуток?",
+            reply_markup=builder.as_markup()
+        )
+
     await callback.answer()

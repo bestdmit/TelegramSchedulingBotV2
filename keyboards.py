@@ -132,17 +132,16 @@ def create_calendar_keyboard(year:int,month:int):
 
     return builder.as_markup()
 
-def create_time_keyboard(selected_date: datetime.date):
+def create_time_keyboard(selected_date: datetime.date,start_selection: str = None, end_selection: str = None):
     builder = InlineKeyboardBuilder()
     work_hours = get_working_hours_for_date(selected_date)
     start_hour = work_hours["start_hour"]
     end_hour = work_hours["end_hour"]
 
-    time_slots = []
+    buttons = []
     current_hour = start_hour
-    today = datetime.now().date
     now = datetime.now()
-    is_today = selected_date == today
+    is_today = selected_date == now.date()
     
     while current_hour <= end_hour:
         for minute in [0, 15, 30, 45]:
@@ -154,31 +153,41 @@ def create_time_keyboard(selected_date: datetime.date):
                 if slot_time <= now:
                     continue
             
-            time_slots.append((current_hour, minute))
-        
+            time_str = f"{current_hour:02d}:{minute:02d}"
+            label = time_str
+            if time_str == start_selection:
+                label = f"🟢 {time_str}"
+            elif time_str == end_selection:
+                label = f"🔴 {time_str}"
+            elif start_selection and end_selection and start_selection < time_str < end_selection:
+                label= f"🔹 {time_str}"
+
+            buttons.append(InlineKeyboardButton(
+                text=label,
+                callback_data=TimeClick(
+                    action="select",
+                    hour=current_hour,
+                    minute=minute,
+                    year=selected_date.year,
+                    month=selected_date.month,
+                    day=selected_date.day
+                ).pack()
+            ))
         current_hour += 1
-    
-    buttons = []
-    for hour, minute in time_slots:
-        buttons.append(InlineKeyboardButton(
-            text=f"{hour:02d}:{minute:02d}",
-            callback_data=TimeClick(
-                action="select",
-                hour=hour,
-                minute=minute,
-                year=selected_date.year,
-                month=selected_date.month,
-                day=selected_date.day
-            ).pack()
-        ))
-    
+
     for i in range(0, len(buttons), 4):
         builder.row(*buttons[i:i+4])
     
+    if start_selection and end_selection:
+        builder.row(InlineKeyboardButton(
+            text="✅ Подтвердить интервал",
+            callback_data="confirm_booking"
+        ))
     builder.row(InlineKeyboardButton(
         text="Назад к календарю",
         callback_data=TimeClick(action="back", hour=0, minute=0).pack()
     ))
-    
     return builder.as_markup()
+
+    
 
