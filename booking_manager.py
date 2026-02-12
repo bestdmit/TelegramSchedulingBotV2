@@ -6,6 +6,8 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from typing import Dict, Any
 
+from user_scenariors.booking_service import BookingService
+
 class BookingManager:
     def __init__(self, user_worker: UsersDataBaseWorker, booking_worker: BookingsDataBaseWorker):
         self.user_worker = user_worker
@@ -73,7 +75,13 @@ class BookingManager:
             
         return message
         
-async def start_booking_for_user(message: Message, state: FSMContext, user_worker: UsersDataBaseWorker, 
-                                booking_worker: BookingsDataBaseWorker)-> Dict[str,Any]:
-    manager = BookingManager(user_worker, booking_worker)
-    return await manager.init_booking_proccess(message, state)
+async def start_booking_for_user(message: Message, 
+                                state: FSMContext, 
+                                user_worker: UsersDataBaseWorker, 
+                                booking_worker: BookingsDataBaseWorker) -> dict:
+    """
+    Упрощенная функция для обратной совместимости.
+    Рекомендуется использовать напрямую BookingService.
+    """
+    service = BookingService(user_worker, booking_worker)
+    return await service.start_booking(message, state)

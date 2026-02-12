@@ -29,8 +29,7 @@ class BookingsDataBaseWorker:
 
     async def add_booking(self,user_id:int,user_role:str,
                           subjects:str,event_date:date,
-                          event_time_range:str,
-                          time_type:str):
+                          event_time:str):
         """
         Добавление бронирования в БД
         
@@ -53,8 +52,8 @@ class BookingsDataBaseWorker:
                 formatted_date = event_date.strftime("%d.%m.%Y")
                 time_type = time_types["type1"]
                 query = """
-                        INSERT into bookings (booking_id,user_id,user_role,teacher_subjects,event_date,event_time_range,time_type)
-                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+                        INSERT into bookings (booking_id,user_id,user_role,subjects,event_date,event_time,time_type)
+                        VALUES ($1,$2,$3,$4,$5,$6,$7)
                         """
                 await conn.execute(
                     query,
@@ -63,7 +62,7 @@ class BookingsDataBaseWorker:
                     user_role, 
                     subjects,
                     formatted_date, 
-                    event_time_range, 
+                    event_time, 
                     time_type
                 )
                 print(f"Успешно добавлена запись для пользователя {user_id}")
