@@ -28,6 +28,7 @@ async def main():
     await usersdataBaseWorker.update_user(1,"Степан","teacher,student","Math,Informatic")
 
     await usersdataBaseWorker.connect()
+    await bookingsDatabaseWorker.connect()
     dp.include_routers(admin_router,user_router,booking_router)
     dp.startup.register(set_special_menu)
     await dp.start_polling(bot,userWorker=usersdataBaseWorker)
