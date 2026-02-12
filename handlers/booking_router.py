@@ -4,8 +4,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from booking_manager import start_booking_for_user
 # from aiogram_calendar import SimpleCalendar, SimpleCalendarCallback
-import datetime
-from datetime import date, time
+import datetime  
+from datetime import date, time, datetime as dt 
 from keyboards import create_calendar_keyboard, create_time_keyboard
 from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick, get_day_info
@@ -139,7 +139,7 @@ async def process_time_selection(callback: CallbackQuery, callback_data: TimeCli
         date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
         
         builder = InlineKeyboardBuilder()
-        builder.button(text="✅ Да, записать", callback_data="final_confirm")
+        builder.button(text="✅ Да, записать", callback_data="confirm_booking")
         builder.button(text="❌ Отмена", callback_data="booking_cancel")
         
         await callback.message.edit_text(
@@ -173,7 +173,7 @@ async def handle_confirm_booking(callback: CallbackQuery, state: FSMContext, use
         return
     event_date = data.get("event_date")
     if not event_date:
-        event_date = data.today()
+        event_date = datetime.data.today()
     
     user_id = callback.from_user.id
     user_data = await userWorker.get_user(user_id)
@@ -190,7 +190,7 @@ async def handle_confirm_booking(callback: CallbackQuery, state: FSMContext, use
         user_role=user_role,
         subjects=user_data.get("subjects", ""),
         event_date=event_date,
-        event_time_range=time_range  
+        event_time=time_range  
     )
     
     if success:
