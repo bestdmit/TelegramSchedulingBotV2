@@ -129,7 +129,7 @@ class BookingService:
                                     state: FSMContext) -> None:
         """Обрабатывает выбор времени"""
         if callback_data.action == "back":
-            today = datetime.now()
+            today = datetime.datetime.now()
             await callback.message.edit_text(
                 "Выберите дату для записи: ",
                 reply_markup=create_calendar_keyboard(today.year, today.month)
