@@ -30,20 +30,22 @@ async def handle_book_time(message: Message,
 
 @booking_router.callback_query(F.data == "booking_teacher")
 async def handle_teacher_booking(callback: CallbackQuery, 
-                                userWorker: UsersDataBaseWorker):
+                                userWorker: UsersDataBaseWorker,
+                                state: FSMContext):
     """Обработчик выбора режима преподавателя"""
     bookingWorker = BookingsDataBaseWorker()
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
-    await service.handle_teacher_booking(callback)
+    await service.handle_teacher_booking(callback, state)
 
 
 @booking_router.callback_query(F.data == "booking_student")
 async def handle_student_booking(callback: CallbackQuery,
-                                userWorker: UsersDataBaseWorker):
+                                userWorker: UsersDataBaseWorker,
+                                state: FSMContext):
     """Обработчик выбора режима ученика"""
     bookingWorker = BookingsDataBaseWorker()
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
-    await service.handle_student_booking(callback)
+    await service.handle_student_booking(callback, state)
 
 
 @booking_router.callback_query(F.data == "booking_cancel")

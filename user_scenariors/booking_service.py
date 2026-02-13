@@ -8,7 +8,7 @@ from keyboards import create_calendar_keyboard, create_time_keyboard
 from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick, get_day_info
 import datetime
-from datetime import date
+from datetime import date, datetime
 from typing import Optional, Dict, Any
 
 class BookingService:
@@ -76,8 +76,9 @@ class BookingService:
         else:
             await message.answer("У вас нет ролей для бронирования")
     
-    async def handle_teacher_booking(self, callback: CallbackQuery) -> None:
+    async def handle_teacher_booking(self, callback: CallbackQuery, state: FSMContext) -> None:
         """Обрабатывает выбор режима преподавателя"""
+        await state.update_data(booking_role = "teacher")
         now = datetime.datetime.now()
         await callback.message.answer(
             text="Вы выбрали режим преподавателя\nВыберите дату для записи:",
@@ -85,9 +86,14 @@ class BookingService:
         )
         await callback.answer()
     
-    async def handle_student_booking(self, callback: CallbackQuery) -> None:
+    async def handle_student_booking(self, callback: CallbackQuery, state: FSMContext) -> None:
         """Обрабатывает выбор режима ученика"""
-        await callback.message.answer("Вы выбрали режим ученика")
+        await state.update_data(booking_role="student")
+        now = datetime.now()
+        await callback.message.answer(
+            text="Вы выбрали режим ученика\nВыберите дату для записи:",
+            reply_markup=create_calendar_keyboard(now.year, now.month)
+        )
         await callback.answer()
     
     async def cancel_booking(self, callback: CallbackQuery, state: FSMContext) -> None:
@@ -221,6 +227,7 @@ class BookingService:
     async def confirm_booking(self, callback: CallbackQuery, state: FSMContext, userWorker: UsersDataBaseWorker) -> None:
         """Подтверждает и сохраняет бронирование в БД"""
         from database_workers.database_worker_for_bookings import BookingsDataBaseWorker
+        from keyboards import get_main_menu
         bookingWorker = BookingsDataBaseWorker()
         
         try:
@@ -238,7 +245,7 @@ class BookingService:
             return
         event_date = data.get("event_date")
         if not event_date:
-            event_date = datetime.data.today()
+            event_date = data.today()
         
         user_id = callback.from_user.id
         user_data = await userWorker.get_user(user_id)
@@ -247,12 +254,24 @@ class BookingService:
             return 
         
         time_range = f"{start_time_str}-{end_time_str}"
-        roles = user_data.get("roles", "")
-        user_role = "teacher" if "teacher" in roles else "student" if "student" in roles else "unknown"
+        # roles = user_data.get("roles", "")
+        # user_role = "teacher" if "teacher" in roles else "student" if "student" in roles else "unknow"
+        #вместо этого использую это (ниже) так как получаю роли из fsm состояний дополнение: перенес в отуствиве роли
+        data = await state.get_data()
+        booking_role = data.get("booking_role")
+
+        if not booking_role:
+            roles = user_data.get("roles", "")
+            if "teacher" in roles and "student" in roles:
+                await callback.message.answer(
+                    reply_markup=get_main_menu()
+                )
+                await state.clear()
+                await callback.answer()
         
         success = await bookingWorker.add_booking(
             user_id=user_id,
-            user_role=user_role,
+            user_role=booking_role,
             subjects=user_data.get("subjects", ""),
             event_date=event_date,
             event_time=time_range  
@@ -265,7 +284,7 @@ class BookingService:
                 f"Бронирование сохранено в БД!\n\n"
                 f"Дата: {formatted_date}\n"
                 f"Время: {time_range}\n"
-                f"Роль: {user_role}\n"
+                f"Роль: {booking_role}\n"
                 f"Предметы: {user_data.get('subjects', '')}"
             )
         else:
