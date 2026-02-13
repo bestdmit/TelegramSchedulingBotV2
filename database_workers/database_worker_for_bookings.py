@@ -73,3 +73,70 @@ class BookingsDataBaseWorker:
             print(f"Ошибка добавления записи: {e}")
             return False
         
+    async def get_bookings_by_id(self, user_id: int) -> list[Dict[str, Any]]:
+        """
+        Возвращает все записи из таблицы bookings для конкретного user_id
+        """
+        try:
+            if not self.pool:
+                print("Нет подключения к БД")
+                return []
+            
+            async with self.pool.acquire() as conn:
+                query = "SELECT * FROM bookings WHERE user_id = $1 ORDER BY event_date, event_time"
+                rows = await conn.fetch(query, user_id)
+                
+                return [dict(row) for row in rows]
+                
+        except Exception as e:
+            print(f"Ошибка при получении записей пользователя {user_id}: {e}")
+            return []
+        
+    async def get_booking_by_id(self, booking_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Получает информацию о конкретном бронировании по его booking_id.
+        Возвращает словарь с данными или None, если запись не найдена.
+        """
+        try:
+            if not self.pool:
+                print("Нет подключения к БД")
+                return None
+            
+            async with self.pool.acquire() as conn:
+                query = "SELECT * FROM bookings WHERE booking_id = $1"
+                row = await conn.fetchrow(query, booking_id)
+                
+                if row:
+                    return dict(row)
+                
+                print(f"Запись №{booking_id} не найдена")
+                return None
+                
+        except Exception as e:
+            print(f"Ошибка при получении записи №{booking_id}: {e}")
+            return None
+
+    async def delete_booking(self, booking_id: int) -> bool:
+        """
+        Удаляет запись из таблицы bookings по её ID.
+        """
+        try:
+            if not self.pool:
+                print("Нет подключения к БД")
+                return False
+
+            async with self.pool.acquire() as conn:
+                query = "DELETE FROM bookings WHERE booking_id = $1"
+                result = await conn.execute(query, booking_id)
+                
+                if result == "DELETE 1":
+                    print(f"Запись №{booking_id} успешно удалена")
+                    return True
+                else:
+                    print(f"Запись №{booking_id} не найдена в базе данных")
+                    return False
+
+        except Exception as e:
+            print(f"Ошибка при удалении записи №{booking_id}: {e}")
+            return False
+        

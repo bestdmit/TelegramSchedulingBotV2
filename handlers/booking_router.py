@@ -6,14 +6,16 @@ from database_workers.database_worker_for_bookings import BookingsDataBaseWorker
 from user_scenariors.booking_factory import BookingServiceFactory
 from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick
+from aiogram.filters import Command
 booking_router = Router()
 
 @booking_router.message(F.text == "Забронировать время")
 async def handle_book_time(message: Message, 
                           state: FSMContext, 
-                          userWorker: UsersDataBaseWorker):
+                          userWorker: UsersDataBaseWorker,
+                          bookingWorker:BookingsDataBaseWorker):
     """Обработчик начала бронирования"""
-    bookingWorker = BookingsDataBaseWorker()
+    
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     
     result = await service.start_booking(message, state)
@@ -29,9 +31,9 @@ async def handle_book_time(message: Message,
 @booking_router.callback_query(F.data == "booking_teacher")
 async def handle_teacher_booking(callback: CallbackQuery, 
                                 userWorker: UsersDataBaseWorker,
-                                state: FSMContext):
+                                state: FSMContext,
+                                bookingWorker:BookingsDataBaseWorker):
     """Обработчик выбора режима преподавателя"""
-    bookingWorker = BookingsDataBaseWorker()
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.handle_teacher_booking(callback, state)
 
@@ -39,9 +41,9 @@ async def handle_teacher_booking(callback: CallbackQuery,
 @booking_router.callback_query(F.data == "booking_student")
 async def handle_student_booking(callback: CallbackQuery,
                                 userWorker: UsersDataBaseWorker,
-                                state: FSMContext):
+                                state: FSMContext,
+                                bookingWorker:BookingsDataBaseWorker):
     """Обработчик выбора режима ученика"""
-    bookingWorker = BookingsDataBaseWorker()
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.handle_student_booking(callback, state)
 
@@ -49,9 +51,9 @@ async def handle_student_booking(callback: CallbackQuery,
 @booking_router.callback_query(F.data == "booking_cancel")
 async def handle_booking_cancel(callback: CallbackQuery, 
                                state: FSMContext,
-                               userWorker: UsersDataBaseWorker):
+                               userWorker: UsersDataBaseWorker,
+                               bookingWorker:BookingsDataBaseWorker):
     """Обработчик отмены бронирования"""
-    bookingWorker = BookingsDataBaseWorker()
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.cancel_booking(callback, state)
 
@@ -60,9 +62,9 @@ async def handle_booking_cancel(callback: CallbackQuery,
 async def process_calendar_selection(callback: CallbackQuery, 
                                     callback_data: CalendarClick, 
                                     state: FSMContext,
-                                    userWorker: UsersDataBaseWorker):
+                                    userWorker: UsersDataBaseWorker,
+                                    bookingWorker:BookingsDataBaseWorker):
     """Обработчик выбора даты в календаре"""
-    bookingWorker = BookingsDataBaseWorker()
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.process_calendar_selection(callback, callback_data, state)
 
@@ -71,9 +73,9 @@ async def process_calendar_selection(callback: CallbackQuery,
 async def process_time_selection(callback: CallbackQuery, 
                                 callback_data: TimeClick, 
                                 state: FSMContext,
-                                userWorker: UsersDataBaseWorker):
+                                userWorker: UsersDataBaseWorker,
+                                bookingWorker:BookingsDataBaseWorker):
     """Обработчик выбора времени"""
-    bookingWorker = BookingsDataBaseWorker()
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.process_time_selection(callback, callback_data, state)
 
@@ -81,8 +83,39 @@ async def process_time_selection(callback: CallbackQuery,
 @booking_router.callback_query(F.data == "confirm_booking")
 async def handle_confirm_booking(callback: CallbackQuery, 
                                 state: FSMContext,
-                                userWorker: UsersDataBaseWorker):
+                                userWorker: UsersDataBaseWorker,
+                                bookingWorker:BookingsDataBaseWorker):
     """Обработчик подтверждения бронирования"""
-    bookingWorker = BookingsDataBaseWorker()
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
-    await service.confirm_booking(callback, state,userWorker)
+    await service.confirm_booking(callback, state,userWorker,bookingWorker)
+
+@booking_router.message(Command("show_bookings"))
+async def show_my_bookings(message:Message,
+                           userWorker: UsersDataBaseWorker,
+                           bookingWorker:BookingsDataBaseWorker):
+    service = BookingServiceFactory.create_bookings_list_service(user_worker=userWorker,
+                                                                 booking_worker=bookingWorker)
+    await service.Show_bookings(message=message)
+
+@booking_router.callback_query(F.data.startswith("booking_info"))
+async def show_booking_info(callback:CallbackQuery,
+                             userWorker: UsersDataBaseWorker,
+                           bookingWorker:BookingsDataBaseWorker):
+    service = BookingServiceFactory.create_bookings_list_service(user_worker=userWorker,
+                                                                 booking_worker=bookingWorker)
+    await service.booking_info(callback=callback,booking_worker=bookingWorker)
+
+@booking_router.callback_query(F.data.startswith("delete_booking_"))
+async def handle_delete_request(callback: CallbackQuery, userWorker, bookingWorker):
+    service = BookingServiceFactory.create_bookings_list_service(userWorker, bookingWorker)
+    await service.delete_booking_confirmation(callback)
+
+@booking_router.callback_query(F.data.startswith("confirm_delete_"))
+async def handle_confirm_delete(callback: CallbackQuery, userWorker, bookingWorker):
+    service = BookingServiceFactory.create_bookings_list_service(userWorker, bookingWorker)
+    await service.confirm_delete(callback)
+
+@booking_router.callback_query(F.data == "cancel_delete")
+async def handle_cancel_delete(callback: CallbackQuery, userWorker, bookingWorker):
+    service = BookingServiceFactory.create_bookings_list_service(userWorker, bookingWorker)
+    await service.cancel_delete(callback)

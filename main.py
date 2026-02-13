@@ -23,15 +23,13 @@ async def main():
     usersdataBaseWorker = UsersDataBaseWorker()
     bookingsDatabaseWorker = BookingsDataBaseWorker()
 
-    await usersdataBaseWorker.add_user(1,"цуоруамуцоауцо")
-    await usersdataBaseWorker.add_user(2,"Кирилл")
-    await usersdataBaseWorker.update_user(1,"Степан","teacher,student","Math,Informatic")
-
     await usersdataBaseWorker.connect()
     await bookingsDatabaseWorker.connect()
     dp.include_routers(admin_router,user_router,booking_router)
     dp.startup.register(set_special_menu)
-    await dp.start_polling(bot,userWorker=usersdataBaseWorker)
+    await dp.start_polling(bot,
+                           userWorker=usersdataBaseWorker,
+                           bookingWorker= bookingsDatabaseWorker)
 
     # # Проверка работы модуля записей
     # await bookingsDatabaseworker.connect()

@@ -224,11 +224,12 @@ class BookingService:
         )
         await callback.answer()
     
-    async def confirm_booking(self, callback: CallbackQuery, state: FSMContext, userWorker: UsersDataBaseWorker) -> None:
+    async def confirm_booking(self, callback: CallbackQuery, 
+                              state: FSMContext, userWorker: UsersDataBaseWorker,
+                              bookingWorker:BookingsDataBaseWorker) -> None:
         """Подтверждает и сохраняет бронирование в БД"""
         from database_workers.database_worker_for_bookings import BookingsDataBaseWorker
         from keyboards import get_main_menu
-        bookingWorker = BookingsDataBaseWorker()
         
         try:
             await bookingWorker.connect()
