@@ -6,8 +6,6 @@ from database_workers.database_worker_for_bookings import BookingsDataBaseWorker
 from user_scenariors.booking_factory import BookingServiceFactory
 from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick
-import datetime
-from datetime import date, time, datetime as dt
 booking_router = Router()
 
 @booking_router.message(F.text == "Забронировать время")

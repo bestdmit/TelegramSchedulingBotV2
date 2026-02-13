@@ -79,10 +79,10 @@ class BookingService:
     async def handle_teacher_booking(self, callback: CallbackQuery, state: FSMContext) -> None:
         """Обрабатывает выбор режима преподавателя"""
         await state.update_data(booking_role = "teacher")
-        now = datetime.datetime.now()
+        today = datetime.today()
         await callback.message.answer(
             text="Вы выбрали режим преподавателя\nВыберите дату для записи:",
-            reply_markup=create_calendar_keyboard(now.year, now.month)
+            reply_markup=create_calendar_keyboard(today.year, today.month)
         )
         await callback.answer()
     
@@ -135,7 +135,7 @@ class BookingService:
                                     state: FSMContext) -> None:
         """Обрабатывает выбор времени"""
         if callback_data.action == "back":
-            today = datetime.datetime.now()
+            today = datetime.today()
             await callback.message.edit_text(
                 "Выберите дату для записи: ",
                 reply_markup=create_calendar_keyboard(today.year, today.month)
