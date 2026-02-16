@@ -10,7 +10,7 @@ from typesClasses.TimeClick import TimeClick, get_day_info
 import datetime
 from datetime import date, datetime
 from typing import Optional, Dict, Any
-
+from config import rolesRU
 class BookingsListService:
     '''Сервис для управления списком бронирований'''
     def __init__(self, 
@@ -44,7 +44,7 @@ class BookingsListService:
         booking = await booking_worker.get_booking_by_id(booking_id=booking_id)
 
         res = (f"Дата бронирования: {booking["event_date"]}\n"+
-                f"Ваша роль при бронировании: {booking["user_role"]}\n"+
+                f"Ваша роль при бронировании: {rolesRU[booking["user_role"]]}\n"+
                 f"Время бронирования: {booking["event_time"]}")
         
         builder = InlineKeyboardBuilder()

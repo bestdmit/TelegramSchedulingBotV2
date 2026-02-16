@@ -79,6 +79,7 @@ class BookingService:
     async def handle_teacher_booking(self, callback: CallbackQuery, state: FSMContext) -> None:
         """Обрабатывает выбор режима преподавателя"""
         await state.update_data(booking_role = "teacher")
+        await callback.message.delete() 
         today = datetime.today()
         await callback.message.answer(
             text="Вы выбрали режим преподавателя\nВыберите дату для записи:",
@@ -89,6 +90,7 @@ class BookingService:
     async def handle_student_booking(self, callback: CallbackQuery, state: FSMContext) -> None:
         """Обрабатывает выбор режима ученика"""
         await state.update_data(booking_role="student")
+        await callback.message.delete() 
         now = datetime.now()
         await callback.message.answer(
             text="Вы выбрали режим ученика\nВыберите дату для записи:",
@@ -132,7 +134,8 @@ class BookingService:
     
     async def process_time_selection(self, callback: CallbackQuery, 
                                     callback_data: TimeClick, 
-                                    state: FSMContext) -> None:
+                                    state: FSMContext,
+                                    userWorker:UsersDataBaseWorker) -> None:
         """Обрабатывает выбор времени"""
         if callback_data.action == "back":
             today = datetime.today()

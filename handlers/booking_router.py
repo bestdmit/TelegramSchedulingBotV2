@@ -77,7 +77,7 @@ async def process_time_selection(callback: CallbackQuery,
                                 bookingWorker:BookingsDataBaseWorker):
     """Обработчик выбора времени"""
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
-    await service.process_time_selection(callback, callback_data, state)
+    await service.process_time_selection(callback, callback_data, state,userWorker)
 
 
 @booking_router.callback_query(F.data == "confirm_booking")
