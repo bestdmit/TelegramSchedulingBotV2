@@ -11,6 +11,7 @@ def get_main_menu() -> ReplyKeyboardMarkup:
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Забронировать время")],
+            [KeyboardButton(text="Обратиться к администратору")],
         ],
         resize_keyboard=True,
         one_time_keyboard=False
@@ -22,10 +23,9 @@ def get_no_roles_menu() -> ReplyKeyboardMarkup:
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Обратиться к администратору")],
-            [KeyboardButton(text="Проверить наличие ролей")]
         ],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=False
     )
     return keyboard
 

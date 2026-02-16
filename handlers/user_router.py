@@ -31,6 +31,13 @@ async def delete_myself(message: Message,userWorker:UsersDataBaseWorker):
         await message.answer("Вы не были зарегистрированы")
     
 
+@user_router.message(F.text == "Обратиться к администратору")
+async def handle_contact_admin(message: Message):
+    await message.answer(
+        "Для получения помощи обратитесь к администратору\n"
+        "Телефон администратора: +79001372727\n\n"
+    )
+
 @user_router.message(RegisterSteps.wait_user_name)
 async def process_name(message:Message,state:FSMContext,userWorker:UsersDataBaseWorker,bot:Bot):
     await userWorker.add_user(message.from_user.id,message.text)
