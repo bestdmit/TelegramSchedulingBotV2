@@ -1,10 +1,10 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database_workers.database_worker_for_users import UsersDataBaseWorker
-from config import subjects
+from config import subjects,rolesRU
 from keyboards import get_subjects_keyboard, get_roles_keyboard
 from aiogram import Bot
-
+from keyboards import get_main_menu
 class SimpleUserServices:
     """Работа с неполными пользователями"""
 
@@ -128,6 +128,7 @@ class SimpleUserServices:
             return
         
         roles_str = ",".join(final_roles)
+        roles_ru = ",".join([rolesRU[role] for role in final_roles])
         await self.user_worker.update_user(user_id,user_name, roles_str)
 
         await callback.message.delete()
@@ -136,8 +137,7 @@ class SimpleUserServices:
             try:
                 await bot.send_message(
                     chat_id= user_id,
-                    text=f"Вам назначены роли: {roles_str}\n"
-                         f"Введите команду /start чтобы обновить меню доступных функций"
+                    text=f"Вам назначены роли: {roles_ru}\n"
                 )
             except Exception as e:
                 print("Не удалось отправить сообщение пользователю {user_id}: {e}")
@@ -220,10 +220,12 @@ class SimpleUserServices:
             await callback.message.delete()
             if bot:
                 try:
+                    new_menu = get_main_menu()
                     await bot.send_message(
                         chat_id=user_id,
                         text=f"Вам назначены предметы: {', '.join(subject_names)}\n"
-                             f"Введите команду /start чтобы обновить меню доступных функций"
+                             f"Ваше меню обновлено",
+                        reply_markup=new_menu
                     )
                 except Exception as e:
                     print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
