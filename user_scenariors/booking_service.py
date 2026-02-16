@@ -10,7 +10,7 @@ from typesClasses.TimeClick import TimeClick, get_day_info
 import datetime
 from datetime import date, datetime
 from typing import Optional, Dict, Any
-
+from config import rolesRU
 class BookingService:
     """Сервис для управления бронированием времени"""
     
@@ -282,10 +282,10 @@ class BookingService:
             formatted_date = event_date.strftime("%d.%m.%Y")
             
             await callback.message.edit_text(
-                f"Бронирование сохранено в БД!\n\n"
+                f"Бронирование сохранено!\n\n"
                 f"Дата: {formatted_date}\n"
                 f"Время: {time_range}\n"
-                f"Роль: {booking_role}\n"
+                f"Роль: {rolesRU[booking_role]}\n"
                 f"Предметы: {user_data.get('subjects', '')}"
             )
         else:
