@@ -12,6 +12,7 @@ def get_main_menu() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text="Забронировать время")],
             [KeyboardButton(text="Обратиться к администратору")],
+            [KeyboardButton(text="Мои бронирования")]
         ],
         resize_keyboard=True,
         one_time_keyboard=False

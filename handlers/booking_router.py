@@ -89,6 +89,7 @@ async def handle_confirm_booking(callback: CallbackQuery,
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.confirm_booking(callback, state,userWorker,bookingWorker)
 
+@booking_router.message(F.text == "Мои бронирования")
 @booking_router.message(Command("show_bookings"))
 async def show_my_bookings(message:Message,
                            userWorker: UsersDataBaseWorker,
