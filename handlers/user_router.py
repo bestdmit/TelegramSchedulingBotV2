@@ -1,7 +1,7 @@
 from aiogram import Bot, Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
-from states.registerSteps import RegisterSteps
+from states.RegisterSteps import RegisterSteps
 from aiogram.fsm.context import FSMContext
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from config import admin_ids
@@ -31,6 +31,13 @@ async def delete_myself(message: Message,userWorker:UsersDataBaseWorker):
         await message.answer("Вы не были зарегистрированы")
     
 
+@user_router.message(F.text == "Обратиться к администратору")
+async def handle_contact_admin(message: Message):
+    await message.answer(
+        "Для получения помощи обратитесь к администратору\n"
+        "Телефон администратора: +79001372727\n\n"
+    )
+
 @user_router.message(RegisterSteps.wait_user_name)
 async def process_name(message:Message,state:FSMContext,userWorker:UsersDataBaseWorker,bot:Bot):
     await userWorker.add_user(message.from_user.id,message.text)
@@ -41,9 +48,10 @@ async def process_name(message:Message,state:FSMContext,userWorker:UsersDataBase
                 chat_id=admin_id,
                 text=f"Новый зарегистрированный пользователь: {message.text}\n ID:{message.from_user.id}"
                 )
-
+        await state.clear()
     else:
         await message.answer(f"Ошибка добавления")
+        await state.clear()
         # menu = get_main_menu()
         # await message.answer(f"Вы успешно добавлены,{message.text}",
         #                      reply_markup = menu)#потом нужно перенсти меню без ролей туда, где не будет ролей, а не отсутсвие полбзователя в таблице

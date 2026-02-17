@@ -1,9 +1,10 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database_workers.database_worker_for_users import UsersDataBaseWorker
-from config import subjects
+from config import subjects,rolesRU
 from keyboards import get_subjects_keyboard, get_roles_keyboard
-
+from aiogram import Bot
+from keyboards import get_main_menu
 class SimpleUserServices:
     """Работа с неполными пользователями"""
 
@@ -113,7 +114,7 @@ class SimpleUserServices:
         )
         await callback.answer()
 
-    async def process_role_save(self,callback: CallbackQuery):
+    async def process_role_save(self,callback: CallbackQuery, bot: Bot = None):
         user_id = int(callback.data.split(":")[-1])
         user_name = (await self.user_worker.get_user(user_id))["user_name"]
         final_roles = []
@@ -127,9 +128,19 @@ class SimpleUserServices:
             return
         
         roles_str = ",".join(final_roles)
+        roles_ru = ",".join([rolesRU[role] for role in final_roles])
         await self.user_worker.update_user(user_id,user_name, roles_str)
 
         await callback.message.delete()
+
+        if bot:
+            try:
+                await bot.send_message(
+                    chat_id= user_id,
+                    text=f"Вам назначены роли: {roles_ru}\n"
+                )
+            except Exception as e:
+                print("Не удалось отправить сообщение пользователю {user_id}: {e}")
         if ("teacher" in final_roles) or ("student" in final_roles):
             if "teacher" in final_roles:
                 await callback.message.answer(
@@ -154,9 +165,7 @@ class SimpleUserServices:
                 f"User ID: {user_id}\n"
                 f"Роли: {roles_str}"
             )
-        # await callback.message.answer(
-        #     f"Роли добавлены!\nПользователь ID {user_id}\nРоли: {roles_str}"
-        # )
+
         await callback.answer()
 
     async def process_subject_toggle(self,callback: CallbackQuery):
@@ -181,7 +190,7 @@ class SimpleUserServices:
         )
         await callback.answer()
 
-    async def process_subjects_save(self,callback: CallbackQuery):
+    async def process_subjects_save(self,callback: CallbackQuery, bot: Bot = None):
         user_id = int(callback.data.split(":")[-1])
         user = await self.user_worker.get_user(user_id)
         
@@ -209,6 +218,17 @@ class SimpleUserServices:
                 subject_names.append(subjects.get(subj_id, f"Предмет {subj_id}"))
             
             await callback.message.delete()
+            if bot:
+                try:
+                    new_menu = get_main_menu()
+                    await bot.send_message(
+                        chat_id=user_id,
+                        text=f"Вам назначены предметы: {', '.join(subject_names)}\n"
+                             f"Ваше меню обновлено",
+                        reply_markup=new_menu
+                    )
+                except Exception as e:
+                    print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
             await callback.message.answer(
                 f"✅ Предметы успешно добавлены!\n\n"
                 f"Преподаватель: {user['user_name']}\n"
