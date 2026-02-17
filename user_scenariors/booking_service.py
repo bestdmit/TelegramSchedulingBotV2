@@ -61,6 +61,11 @@ class BookingService:
                 text="Записаться как ученик",
                 callback_data="booking_student"
             )
+        if 'parent' in user_roles:
+            builder.button(
+                text="Записать ребёнка",
+                callback_data="booking_student"
+            )
         
         if builder.buttons:
             builder.button(

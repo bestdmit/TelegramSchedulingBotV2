@@ -17,3 +17,9 @@ CREATE TABLE IF NOT EXISTS bookings (
     time_type VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS parents (
+    parent_id BIGINT NOT NULL,
+    child_id BIGINT NOT NULL,
+    PRIMARY KEY (parent_id, child_id)
+);

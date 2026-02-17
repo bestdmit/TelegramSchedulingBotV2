@@ -2,10 +2,11 @@ from aiogram import types
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
-from states.RegisterSteps import RegisterSteps
+from states.registerSteps import RegisterSteps
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from database_workers.database_worker_for_users import UsersDataBaseWorker
+from database_workers.database_worker_for_parents import ParentsDataBaseWorker
 from config import admin_ids,roles, subjects
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton,CallbackQuery
@@ -98,5 +99,14 @@ async def process_subject_toggle_handler(callback: CallbackQuery,userWorker:User
 async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
     service = AdminServicesFactory.create_admin_service_for_all_users(userWorker)
     await service.process_subjects_save(callback=callback)
+
+#Обработка работы с родителями
+@admin_router.message(Command("parent_hub"))
+async def show_users_parents_handler(message: Message,
+                                     userWorker:UsersDataBaseWorker,
+                                     parentsWorker:ParentsDataBaseWorker
+                                     ):
+    service = AdminServicesFactory.create_admin_service_for_parent_users(userWorker,parentsWorker)
+    await service.list_users(message=message)
 
 

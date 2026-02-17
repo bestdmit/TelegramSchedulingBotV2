@@ -1,5 +1,6 @@
 from database_workers import UsersDataBaseWorker
 from database_workers import BookingsDataBaseWorker
+from database_workers import ParentsDataBaseWorker
 import asyncio
 import datetime
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ from aiogram.filters import Command
 import os
 from handlers.user_router import user_router as user_router
 from handlers.admin_router import admin_router as admin_router
+
 from commands import set_special_menu
 from handlers.booking_router import booking_router
 load_dotenv()
@@ -22,14 +24,15 @@ print("start")
 async def main():
     usersdataBaseWorker = UsersDataBaseWorker()
     bookingsDatabaseWorker = BookingsDataBaseWorker()
-
+    parentsDataBaseWorker = ParentsDataBaseWorker()
     await usersdataBaseWorker.connect()
     await bookingsDatabaseWorker.connect()
     dp.include_routers(admin_router,user_router,booking_router)
     dp.startup.register(set_special_menu)
     await dp.start_polling(bot,
                            userWorker=usersdataBaseWorker,
-                           bookingWorker= bookingsDatabaseWorker)
+                           bookingWorker= bookingsDatabaseWorker,
+                           parentsWorker=parentsDataBaseWorker)
 
     # # Проверка работы модуля записей
     # await bookingsDatabaseworker.connect()

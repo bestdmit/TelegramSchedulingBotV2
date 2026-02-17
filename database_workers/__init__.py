@@ -1,2 +1,3 @@
 from .database_worker_for_users import UsersDataBaseWorker
 from .database_worker_for_bookings import BookingsDataBaseWorker
+from .database_worker_for_parents import ParentsDataBaseWorker
