@@ -26,7 +26,10 @@ async def main():
     bookingsDatabaseWorker = BookingsDataBaseWorker()
     parentsDataBaseWorker = ParentsDataBaseWorker()
     await usersdataBaseWorker.connect()
+    await usersdataBaseWorker.add_user(1,"цуоруамуцоауцо")
+    await usersdataBaseWorker.add_user(2,"Кирилл")
     await bookingsDatabaseWorker.connect()
+    await parentsDataBaseWorker.connect()
     dp.include_routers(admin_router,user_router,booking_router)
     dp.startup.register(set_special_menu)
     await dp.start_polling(bot,

@@ -1,3 +1,4 @@
+from typing import Union
 from aiogram import types
 from aiogram import Router, F
 from aiogram.filters import Command
@@ -102,11 +103,36 @@ async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDa
 
 #Обработка работы с родителями
 @admin_router.message(Command("parent_hub"))
-async def show_users_parents_handler(message: Message,
+@admin_router.callback_query(F.data.startswith("back_to_parentslist"))
+async def show_users_parents_handler(event: Union[Message, CallbackQuery],
                                      userWorker:UsersDataBaseWorker,
                                      parentsWorker:ParentsDataBaseWorker
                                      ):
     service = AdminServicesFactory.create_admin_service_for_parent_users(userWorker,parentsWorker)
+    message = event if isinstance(event, Message) else event.message
     await service.list_users(message=message)
+
+@admin_router.callback_query(F.data.startswith("parent_info"))
+async def parent_info(callback:CallbackQuery,
+                      userWorker:UsersDataBaseWorker,
+                      parentsWorker:ParentsDataBaseWorker):
+    service = AdminServicesFactory.create_admin_service_for_parent_users(userWorker,parentsWorker)
+    await service.parent_info(callback=callback)
+
+@admin_router.callback_query(F.data.startswith("choose_childrens_for_associating_parent"))
+async def show_childrens(callback:CallbackQuery,
+                      userWorker:UsersDataBaseWorker,
+                      parentsWorker:ParentsDataBaseWorker):
+    service = AdminServicesFactory.create_admin_service_for_parent_users(userWorker,parentsWorker)
+    await service.list_users(message=callback.message,
+                             for_childrens=True,
+                             parent_id=int(callback.data.split("_")[-1]))
+    
+@admin_router.callback_query(F.data.startswith("child_tgl"))
+async def child_tgl_for_parent(callback:CallbackQuery,
+                      userWorker:UsersDataBaseWorker,
+                      parentsWorker:ParentsDataBaseWorker):
+    service = AdminServicesFactory.create_admin_service_for_parent_users(userWorker,parentsWorker)
+    await service.child_tgl(callback=callback)
 
 
