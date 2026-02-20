@@ -78,7 +78,8 @@ async def process_redistered_user_click(callback: CallbackQuery,userWorker:Users
     user_id = callback.data.split("_")[-1]
     reg_user = await userWorker.get_user(int(user_id))
     roles = reg_user["roles"]
-    subjects = reg_user["subjects"]
+    teacher_subjects = reg_user["teacher_subjects"]
+    student_subjects = reg_user["student_subjects"]
 
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -86,10 +87,23 @@ async def process_redistered_user_click(callback: CallbackQuery,userWorker:Users
         callback_data=f"registered_user_give_role_{user_id}"
     )
     
-    builder.button(
-        text = "Предметы",
-        callback_data=f"registered_user_subjects_{user_id}"
-    )
+    # builder.button(
+    #     text = "Предметы",
+    #     callback_data=f"registered_user_subjects_{user_id}"
+    # )
+    
+    # ДОБАВЛЕНЫ: отдельные кнопки для каждой роли
+    if "teacher" in roles:
+        builder.button(
+            text="Предметы преподавателя",
+            callback_data=f"teacher_give_subjects_{user_id}"
+        )
+    
+    if "student" in roles:
+        builder.button(
+            text="Предметы ученика",
+            callback_data=f"student_give_subjects_{user_id}"
+        )
         
     builder.adjust(2)
     await callback.message.delete()
@@ -101,10 +115,27 @@ async def process_redistered_user_click(callback: CallbackQuery,userWorker:Users
         user_info+=f"Роли: {roles}\n"
     else:
         user_info+=f"Роли НЕ НАЗНАЧЕНЫ\n"
-    if subjects:
-        user_info+=f"Предметы: {subjects}\n"
-    else:
+    if teacher_subjects:
+        teacher_names = [subjects.get(s_id, f"Предмет {s_id}") 
+                        for s_id in teacher_subjects.split(',') if s_id]
+        user_info += f"Предметы преподавателя: {', '.join(teacher_names)}\n"
+    
+    if student_subjects:
+        student_names = [subjects.get(s_id, f"Предмет {s_id}") 
+                        for s_id in student_subjects.split(',') if s_id]
+        user_info += f"Предметы ученика: {', '.join(student_names)}\n"
+    if (not student_subjects) and (not teacher_subjects):
         user_info+=f"Предметы НЕ НАЗНАЧЕНЫ\n"
     await callback.message.answer(
         user_info,
         reply_markup=builder.as_markup())
+
+@admin_router.callback_query(F.data.startswith("teacher_give_subjects_"))
+async def process_teacher_subjects_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
+    service = AdminServicesFactory.create_admin_service_for_simple_users(userWorker)
+    await service.process_teacher_subjects(callback=callback)
+
+@admin_router.callback_query(F.data.startswith("student_give_subjects_"))
+async def process_student_subjects_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
+    service = AdminServicesFactory.create_admin_service_for_simple_users(userWorker)
+    await service.process_student_subjects(callback=callback)

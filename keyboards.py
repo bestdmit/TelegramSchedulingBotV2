@@ -58,7 +58,10 @@ def get_roles_keyboard(selected_roles:set,selected_user_id:int):
     return builder.as_markup()
 
 #Клавиатура получения предметов
-def get_subjects_keyboard(selected_subjects: set, user_id: int):
+def get_subjects_keyboard(selected_subjects: set, user_id):
+    
+    if (isinstance(user_id, int)):
+        user_id = str(user_id)
     builder = InlineKeyboardBuilder()
     
     for subject_id, subject_name in subjects.items():
@@ -66,9 +69,10 @@ def get_subjects_keyboard(selected_subjects: set, user_id: int):
         if subject_id in selected_subjects:
             label = "✅ " + label
         
+        callback_data=f"subject_tgl:{user_id}:{subject_id}"
         builder.button(
             text=label,
-            callback_data=f"subject_tgl:{user_id}:{subject_id}"
+            callback_data=callback_data
         )
     
     builder.adjust(2)

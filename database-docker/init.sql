@@ -2,7 +2,8 @@ CREATE TABLE IF NOT EXISTS users (
     user_id BIGINT PRIMARY KEY,
     user_name VARCHAR(255) NOT NULL,
     roles TEXT DEFAULT '',
-    subjects TEXT DEFAULT '',
+    teacher_subjects TEXT DEFAULT '',
+    student_subjects TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
