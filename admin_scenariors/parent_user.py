@@ -91,7 +91,7 @@ class ParentUserServices:
             )
             builder.button(
                 text="✅ Да",
-                callback_data=f"add_parent_{parent_id}_child_{child_id}_relation"
+                callback_data=f"associating_children_{child_id}_parent_{parent_id}"
             )
             await callback.message.edit_text(
                 text=res,
@@ -110,9 +110,9 @@ class ParentUserServices:
 
             res = await self.parent_worker.add_parent_child_relation(parent_id,children_id)
             if res:
-                await callback.message.answer("✅ Ребенок успешно привязан к родителю.")
+                await callback.message.edit_text("✅ Ребенок успешно привязан к родителю.")
             else:
-                await callback.message.answer("⚠️ Не удалось добавить связь.")
+                await callback.message.edit_text("⚠️ Не удалось добавить связь.")
         except Exception as e:
             print(f"Проблема с связывание родителя-ребенка: {e}")
 

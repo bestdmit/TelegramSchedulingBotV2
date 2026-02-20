@@ -135,4 +135,11 @@ async def child_tgl_for_parent(callback:CallbackQuery,
     service = AdminServicesFactory.create_admin_service_for_parent_users(userWorker,parentsWorker)
     await service.child_tgl(callback=callback)
 
+@admin_router.callback_query(F.data.startswith("associating_children"))
+async def child_tgl_for_parent(callback:CallbackQuery,
+                      userWorker:UsersDataBaseWorker,
+                      parentsWorker:ParentsDataBaseWorker):
+    service = AdminServicesFactory.create_admin_service_for_parent_users(userWorker,parentsWorker)
+    await service.add_parent_child_relation(callback=callback)
+
 
