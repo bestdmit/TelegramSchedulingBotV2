@@ -53,3 +53,14 @@ class ParentsDataBaseWorker:
         except Exception as e:
             print(f"Ошибка при получении списка детей: {e}")
             return []
+        
+    async def check_parent(self,parent_id:int)->bool:
+        """Проверяет, есть ли у данного ID дети (является ли он родителем)"""
+        query = "SELECT 1 FROM parents WHERE parent_id = $1 LIMIT 1;"
+        try:
+            async with self.pool.acquire() as connection:
+                row = await connection.fetchrow(query, parent_id)
+                return row is not None
+        except Exception as e:
+            print(f"Ошибка при проверке родителя: {e}")
+            return False
