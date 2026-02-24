@@ -179,7 +179,9 @@ class BookingService:
             start = data.get("start_time")
             end = data.get("end_time")
             
-            user_data = await userWorker.get_user(callback.from_user.id)
+            data_state = await state.get_data()
+            target_user_id = data_state.get('booking_user_id') or callback.from_user.id
+            user_data = await userWorker.get_user(target_user_id)
             date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
             
             builder = InlineKeyboardBuilder()
@@ -207,7 +209,9 @@ class BookingService:
             await callback.answer("❌ Выберите начальное и конечное время", show_alert=True)
             return
         
-        user_data = await self.user_worker.get_user(callback.from_user.id)
+        data_state = await state.get_data()
+        target_user_id = data_state.get('booking_user_id') or callback.from_user.id
+        user_data = await self.user_worker.get_user(target_user_id)
         event_date = data.get("event_date")
         
         if not event_date:
@@ -256,8 +260,8 @@ class BookingService:
         if not event_date:
             event_date = data.today()
         
-        user_id = callback.from_user.id
-        user_data = await userWorker.get_user(user_id)
+        target_user_id = data.get('booking_user_id') or callback.from_user.id
+        user_data = await userWorker.get_user(target_user_id)
         if not user_data:
             await callback.answer("Пользователь не найден", show_alert = True)
             return 
@@ -279,7 +283,7 @@ class BookingService:
                 await callback.answer()
         
         success = await bookingWorker.add_booking(
-            user_id=user_id,
+            user_id=target_user_id,
             user_role=booking_role,
             subjects=user_data.get("subjects", ""),
             event_date=event_date,

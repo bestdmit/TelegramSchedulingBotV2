@@ -34,9 +34,9 @@ class ParentsDataBaseWorker:
             async with self.pool.acquire() as connection:
                 result = await connection.execute(query, parent_id, child_id)
                 if result == "INSERT 0 0":
-                    print("Связь уже существует")
+                    # print("Связь уже существует")
                     return False 
-                print(f"Связь установлена: родитель {parent_id} -> ребенок {child_id}")
+                # print(f"Связь установлена: родитель {parent_id} -> ребенок {child_id}")
                 return True
         except Exception as e:
             print(f"Ошибка при добавлении связи: {e}")

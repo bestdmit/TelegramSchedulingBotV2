@@ -7,17 +7,23 @@ from datetime import datetime
 from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick, get_working_hours_for_date
 #клавиатура и главное меню
-def get_main_menu() -> ReplyKeyboardMarkup:
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="Забронировать время")],
-            [KeyboardButton(text="Обратиться к администратору")],
-            [KeyboardButton(text="Мои бронирования")]
-        ],
+def get_main_menu(parent: bool = False) -> ReplyKeyboardMarkup:
+    # Базовые кнопки, которые есть всегда
+    buttons = [
+        [KeyboardButton(text="Забронировать время")],
+        [KeyboardButton(text="Обратиться к администратору")],
+        [KeyboardButton(text="Мои бронирования")]
+    ]
+    
+    # Добавляем кнопку только если условие истинно
+    if parent:
+        buttons.append([KeyboardButton(text="Мои дети")])
+        
+    return ReplyKeyboardMarkup(
+        keyboard=buttons,
         resize_keyboard=True,
         one_time_keyboard=False
     )
-    return keyboard
 
 #меню без ролей
 def get_no_roles_menu() -> ReplyKeyboardMarkup:

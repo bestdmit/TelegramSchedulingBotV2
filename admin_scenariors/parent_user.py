@@ -13,7 +13,8 @@ class ParentUserServices:
         self.user_worker = user_worker
         self.parent_worker = parent_worker
 
-    async def list_users(self,message:Message,for_childrens:bool=None,parent_id:int=None):
+    async def list_users(self,message:Message,for_childrens:bool=None,parent_id:int=None,
+                         for_childrens_booking:bool=None):
         '''Список всех пользователей'''
         all_users = await self.user_worker.get_all_users()
         builder = InlineKeyboardBuilder()
@@ -76,7 +77,7 @@ class ParentUserServices:
             child_name = (await self.user_worker.get_user(child_id))['user_name']
             parent_id = int(callback.data.split("_")[-1])
             parent_name = (await self.user_worker.get_user(parent_id))['user_name']
-            res = ("Подтвердить связь?/n"+
+            res = ("Подтвердить связь?\n"+
                    f"Ребёнок:\n" +
                    f"Имя: {child_name}\n" +
                    f"ID: {child_id}\n"
@@ -101,16 +102,23 @@ class ParentUserServices:
             print(f"Проблема подтверждения связи родитель-ребенок: {e}")
 
     
-    async def add_parent_child_relation(self,callback:CallbackQuery):
+    async def add_parent_child_relation(self,callback:CallbackQuery,bot: Bot = None):
         '''Добавление связи родитель-ребенок'''
         # Пример коллбэка associating_children_{}_parent_{}
         try:
             parent_id = int(callback.data.split("_")[-1])
             children_id = int(callback.data.split("_")[-3])
-
+            children_name = (await self.user_worker.get_user(children_id))['user_name']
             res = await self.parent_worker.add_parent_child_relation(parent_id,children_id)
             if res:
                 await callback.message.edit_text("✅ Ребенок успешно привязан к родителю.")
+                new_menu = get_main_menu(parent=True)
+                await bot.send_message(
+                    chat_id=parent_id,
+                    text=f"Вам назначен ребёнок: {children_name}\n"
+                            f"Ваше меню обновлено",
+                    reply_markup=new_menu
+                )
             else:
                 await callback.message.edit_text("⚠️ Не удалось добавить связь.")
         except Exception as e:
