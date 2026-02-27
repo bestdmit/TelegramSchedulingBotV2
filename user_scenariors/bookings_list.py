@@ -3,6 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from database_workers.database_worker_for_bookings import BookingsDataBaseWorker
+from database_workers.database_worker_for_parents import ParentsDataBaseWorker
 from states.BookingStates import BookingStates
 from keyboards import create_calendar_keyboard, create_time_keyboard
 from typesClasses.CalendarClick import CalendarClick
@@ -19,23 +20,51 @@ class BookingsListService:
         self.user_worker = user_worker
         self.booking_worker = booking_worker
     
-    async def Show_bookings(self,message:Message,
-                             user_id: int = None):
+    async def Show_bookings(self, message: Message, user_id: int = None):
         """Показать бронирования"""
         target_user_id = user_id or message.from_user.id
+        # Получаем брони самого пользователя
         bookings = await self.booking_worker.get_bookings_by_id(target_user_id)
+        
         builder = InlineKeyboardBuilder()
+        parentworker = ParentsDataBaseWorker()
+        await parentworker.connect()
+        
+        childrens = await parentworker.get_children(target_user_id)
+        
+        # Собираем все бронирования детей в ОДИН плоский список
+        bookings_child = []
+        for child in childrens:
+            child_bookings = await self.booking_worker.get_bookings_by_id(child)
+            bookings_child.extend(child_bookings) # Используем extend вместо append
 
+        # Кнопки для личных бронирований
         for booking in bookings:
             builder.button(
                 text=f"📅 {booking['event_date']} - {booking['event_time']}",
                 callback_data=f"booking_info_{booking['booking_id']}"
             )
+
+        # Кнопки для бронирований детей
+        if bookings_child: # Проверяем, есть ли записи у детей
+            builder.button(
+                text="─── Мои дети ───",
+                callback_data="ignore" # Кнопка-заголовок
+            )
+            for booking in bookings_child:
+                builder.button(
+                    text=f"👶 {booking['event_date']} - {booking['event_time']}",
+                    callback_data=f"booking_info_{booking['booking_id']}"
+                )
+
         builder.adjust(1)
-        text = f"Выберите бронирование\nКоличество: {len(bookings)}"
+        
+        total_count = len(bookings) + len(bookings_child)
+        text = f"Выберите бронирование\nВсего записей: {total_count}"
+        
         try:
             await message.edit_text(text=text, reply_markup=builder.as_markup())
-        except:
+        except Exception:
             await message.answer(text=text, reply_markup=builder.as_markup())
     
     async def booking_info(self,callback:CallbackQuery,
