@@ -128,6 +128,11 @@ async def handle_booking_child(callback: CallbackQuery,
         await callback.message.answer("Ребёнок не найден")
         await callback.answer()
         return
+    if len(child['student_subjects']) == 0:
+        await callback.message.answer("У ребёнка нет предметов")
+        await callback.answer()
+        return
+
 
     # Сохраняем в состоянии, что запись создаётся для ребёнка
     await state.update_data(booking_user_id=child_id, booking_role="student", booking_user_name=child.get('user_name'))
