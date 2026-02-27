@@ -1,0 +1,43 @@
+from aiogram import Bot, Router, F
+from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
+from database_workers.database_worker_for_users import UsersDataBaseWorker
+from database_workers.database_worker_for_bookings import BookingsDataBaseWorker
+from database_workers.database_worker_for_parents import ParentsDataBaseWorker
+from user_scenariors.booking_factory import BookingServiceFactory
+from typesClasses.CalendarClick import CalendarClick
+from typesClasses.TimeClick import TimeClick
+from aiogram.filters import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+booking_router = Router()
+
+# --- existing handlers remain above in original file; we'll only add a new handler for booking_child_list ---
+
+@booking_router.callback_query(F.data == "booking_child_list")
+async def handle_booking_child_list(callback: CallbackQuery,
+                                    userWorker: UsersDataBaseWorker,
+                                    parentsWorker: ParentsDataBaseWorker):
+    """Показать список детей для родителя (вызвано из меню 'Записать ребёнка')"""
+    # Проверим, что пользователь существует
+    user_data = await userWorker.get_user(callback.from_user.id)
+    if not user_data:
+        await callback.message.answer("Пользователь не найден")
+        await callback.answer()
+        return
+
+    childrens = await parentsWorker.get_children(callback.from_user.id)
+    if not childrens:
+        await callback.message.answer("У вас нет привязанных детей.")
+        await callback.answer()
+        return
+
+    builder = InlineKeyboardBuilder()
+    for cid in childrens:
+        child = await userWorker.get_user(cid)
+        name = child.get('user_name') if child else str(cid)
+        builder.button(text=f"{name}", callback_data=f"booking_child_{cid}")
+    builder.adjust(1)
+
+    await callback.message.answer("Выберите ребёнка для записи:", reply_markup=builder.as_markup())
+    await callback.answer()

@@ -1,6 +1,7 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from database_workers.database_worker_for_parents import ParentsDataBaseWorker
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from database_workers.database_worker_for_bookings import BookingsDataBaseWorker
 from states.BookingStates import BookingStates
@@ -33,11 +34,21 @@ class BookingService:
         
         roles_str = user_data.get("roles", "")
         if not roles_str:
-            return {
-                "success": False,
-                "message": "У вас нет назначенных ролей",
-                "user_data": user_data
-            }
+            # Если у пользователя нет ролей в users, но он является родителем
+            # (связан с детьми через таблицу parents), позволяем начать бронирование
+            parent_worker = ParentsDataBaseWorker()
+            try:
+                await parent_worker.connect()
+                is_parent = await parent_worker.check_parent(message.from_user.id)
+            except Exception:
+                is_parent = False
+
+            if not is_parent:
+                return {
+                    "success": False,
+                    "message": "У вас нет назначенных ролей",
+                    "user_data": user_data
+                }
         
         return {
             "success": True,
@@ -50,7 +61,8 @@ class BookingService:
         builder = InlineKeyboardBuilder()
         roles = user_data.get("roles", "")
         user_roles = [role.strip() for role in roles.split(',')] if roles else []
-        
+        parent_worker = ParentsDataBaseWorker()
+        await parent_worker.connect()
         if 'teacher' in user_roles:
             builder.button(
                 text="Записаться как преподаватель",
@@ -60,6 +72,11 @@ class BookingService:
             builder.button(
                 text="Записаться как ученик",
                 callback_data="booking_student"
+            )
+        if (await parent_worker.check_parent(message.from_user.id)):
+            builder.button(
+                text="Записать ребёнка",
+                callback_data="booking_child_list"
             )
         
         if builder.buttons:
@@ -174,7 +191,9 @@ class BookingService:
             start = data.get("start_time")
             end = data.get("end_time")
             
-            user_data = await userWorker.get_user(callback.from_user.id)
+            data_state = await state.get_data()
+            target_user_id = data_state.get('booking_user_id') or callback.from_user.id
+            user_data = await userWorker.get_user(target_user_id)
             date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
             
             builder = InlineKeyboardBuilder()
@@ -202,7 +221,9 @@ class BookingService:
             await callback.answer("❌ Выберите начальное и конечное время", show_alert=True)
             return
         
-        user_data = await self.user_worker.get_user(callback.from_user.id)
+        data_state = await state.get_data()
+        target_user_id = data_state.get('booking_user_id') or callback.from_user.id
+        user_data = await self.user_worker.get_user(target_user_id)
         event_date = data.get("event_date")
         
         if not event_date:
@@ -251,8 +272,8 @@ class BookingService:
         if not event_date:
             event_date = data.today()
         
-        user_id = callback.from_user.id
-        user_data = await userWorker.get_user(user_id)
+        target_user_id = data.get('booking_user_id') or callback.from_user.id
+        user_data = await userWorker.get_user(target_user_id)
         if not user_data:
             await callback.answer("Пользователь не найден", show_alert = True)
             return 
@@ -274,7 +295,7 @@ class BookingService:
                 await callback.answer()
         
         success = await bookingWorker.add_booking(
-            user_id=user_id,
+            user_id=target_user_id,
             user_role=booking_role,
             subjects=user_data.get("subjects", ""),
             event_date=event_date,

@@ -2,7 +2,8 @@ admin_ids = [973231400, 1180878673]
 roles=["teacher","student"]
 rolesRU = {
     "teacher":"Преподаватель",
-    "student":"Ученик"
+    "student":"Ученик",
+    "parent":"Родитель"
 }
 subjects = {
     "1": "Математика",

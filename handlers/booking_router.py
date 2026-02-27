@@ -3,10 +3,12 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from database_workers.database_worker_for_bookings import BookingsDataBaseWorker
+from database_workers.database_worker_for_parents import ParentsDataBaseWorker
 from user_scenariors.booking_factory import BookingServiceFactory
 from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick
 from aiogram.filters import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 booking_router = Router()
 
 @booking_router.message(F.text == "Забронировать время")
@@ -42,10 +44,39 @@ async def handle_teacher_booking(callback: CallbackQuery,
 async def handle_student_booking(callback: CallbackQuery,
                                 userWorker: UsersDataBaseWorker,
                                 state: FSMContext,
-                                bookingWorker:BookingsDataBaseWorker):
+                                bookingWorker:BookingsDataBaseWorker,
+                                parentsWorker: ParentsDataBaseWorker):
     """Обработчик выбора режима ученика"""
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.handle_student_booking(callback, state)
+
+
+@booking_router.callback_query(F.data == "booking_child_list")
+async def handle_booking_child_list(callback: CallbackQuery,
+                                    userWorker: UsersDataBaseWorker,
+                                    parentsWorker: ParentsDataBaseWorker):
+    """Показать список детей для родителя (вызвано из меню 'Записать ребёнка')"""
+    user_data = await userWorker.get_user(callback.from_user.id)
+    if not user_data:
+        await callback.message.answer("Пользователь не найден")
+        await callback.answer()
+        return
+
+    childrens = await parentsWorker.get_children(callback.from_user.id)
+    if not childrens:
+        await callback.message.answer("У вас нет привязанных детей.")
+        await callback.answer()
+        return
+
+    builder = InlineKeyboardBuilder()
+    for cid in childrens:
+        child = await userWorker.get_user(cid)
+        name = child.get('user_name') if child else str(cid)
+        builder.button(text=f"{name}", callback_data=f"booking_child_{cid}")
+    builder.adjust(1)
+
+    await callback.message.answer("Выберите ребёнка для записи:", reply_markup=builder.as_markup())
+    await callback.answer()
 
 
 @booking_router.callback_query(F.data == "booking_cancel")
@@ -78,6 +109,32 @@ async def process_time_selection(callback: CallbackQuery,
     """Обработчик выбора времени"""
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.process_time_selection(callback, callback_data, state,userWorker)
+
+
+@booking_router.callback_query(F.data.startswith("booking_child_"))
+async def handle_booking_child(callback: CallbackQuery,
+                               state: FSMContext,
+                               userWorker: UsersDataBaseWorker,
+                               bookingWorker: BookingsDataBaseWorker):
+    # Выбор ребёнка родителем для записи
+    try:
+        child_id = int(callback.data.split("_")[-1])
+    except Exception:
+        await callback.answer()
+        return
+
+    child = await userWorker.get_user(child_id)
+    if not child:
+        await callback.message.answer("Ребёнок не найден")
+        await callback.answer()
+        return
+
+    # Сохраняем в состоянии, что запись создаётся для ребёнка
+    await state.update_data(booking_user_id=child_id, booking_role="student", booking_user_name=child.get('user_name'))
+
+    # Перейдём к выбору даты как в режиме ученика
+    service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
+    await service.handle_student_booking(callback, state)
 
 
 @booking_router.callback_query(F.data == "confirm_booking")

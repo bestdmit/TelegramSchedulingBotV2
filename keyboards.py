@@ -7,17 +7,23 @@ from datetime import datetime
 from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick, get_working_hours_for_date
 #клавиатура и главное меню
-def get_main_menu() -> ReplyKeyboardMarkup:
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="Забронировать время")],
-            [KeyboardButton(text="Обратиться к администратору")],
-            [KeyboardButton(text="Мои бронирования")]
-        ],
+def get_main_menu(parent: bool = False) -> ReplyKeyboardMarkup:
+    # Базовые кнопки, которые есть всегда
+    buttons = [
+        [KeyboardButton(text="Забронировать время")],
+        [KeyboardButton(text="Обратиться к администратору")],
+        [KeyboardButton(text="Мои бронирования")]
+    ]
+    
+    # Добавляем кнопку только если условие истинно
+    if parent:
+        buttons.append([KeyboardButton(text="Мои дети")])
+        
+    return ReplyKeyboardMarkup(
+        keyboard=buttons,
         resize_keyboard=True,
         one_time_keyboard=False
     )
-    return keyboard
 
 #меню без ролей
 def get_no_roles_menu() -> ReplyKeyboardMarkup:
@@ -84,6 +90,50 @@ def get_subjects_keyboard(selected_subjects: set, user_id):
     
     return builder.as_markup()
 
+
+def change_roles_keyboard(selected_roles:set,selected_user_id:int):
+    '''Клавиатура изменения ролей'''
+    builder = InlineKeyboardBuilder()
+
+    for role in roles:
+        label = f"{role}"
+        if role in selected_roles:
+            label = "✅ "+label
+        builder.button(
+            text = label,
+            callback_data=f"changed_role_tgl:{selected_user_id}:{role}"
+        )
+    builder.adjust(2)
+
+    builder.row(types.InlineKeyboardButton(
+        text="Применить ✅", 
+        callback_data=f"changed_role_save:{selected_user_id}"
+        )
+    )
+    return builder.as_markup()
+
+def change_subjects_keyboard(selected_subjects: set, user_id: int):
+    '''Клавиатура изменения предметов'''
+    builder = InlineKeyboardBuilder()
+    
+    for subject_id, subject_name in subjects.items():
+        label = f"{subject_name}"
+        if subject_id in selected_subjects:
+            label = "✅ " + label
+        
+        builder.button(
+            text=label,
+            callback_data=f"changed_subject_tgl:{user_id}:{subject_id}"
+        )
+    
+    builder.adjust(2)
+    
+    builder.row(types.InlineKeyboardButton(
+        text="✅ Сохранить предметы",
+        callback_data=f"changed_subjects_save:{user_id}"
+    ))
+    
+    return builder.as_markup()
 def create_calendar_keyboard(year:int,month:int):
     now = datetime.now()
     builder = InlineKeyboardBuilder()
@@ -193,6 +243,3 @@ def create_time_keyboard(selected_date: datetime.date,start_selection: str = Non
         callback_data=TimeClick(action="back", hour=0, minute=0).pack()
     ))
     return builder.as_markup()
-
-    
-
