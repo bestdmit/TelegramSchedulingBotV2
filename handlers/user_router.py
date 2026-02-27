@@ -1,7 +1,7 @@
 from aiogram import Bot, Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
-from states.registerSteps import RegisterSteps
+from states.RegisterSteps import RegisterSteps
 from aiogram.fsm.context import FSMContext
 from database_workers.database_worker_for_users import UsersDataBaseWorker
 from database_workers.database_worker_for_parents import ParentsDataBaseWorker
