@@ -11,7 +11,7 @@ from typesClasses.TimeClick import TimeClick, get_day_info
 import datetime
 from datetime import date, datetime
 from typing import Optional, Dict, Any
-from config import rolesRU
+from config import rolesRU, subjects
 class BookingService:
     """Сервис для управления бронированием времени"""
     
@@ -294,23 +294,36 @@ class BookingService:
                 await state.clear()
                 await callback.answer()
         
+        subjects_for_booking = ""
+        if booking_role == "teacher":
+            subjects_for_booking = user_data.get("teacher_subjects", "")
+        elif booking_role == "student":
+            subjects_for_booking = user_data.get("student_subjects", "")
+        
         success = await bookingWorker.add_booking(
             user_id=target_user_id,
             user_role=booking_role,
-            subjects=user_data.get("subjects", ""),
+            subjects=subjects_for_booking,  
             event_date=event_date,
             event_time=time_range  
         )
         
         if success:
             formatted_date = event_date.strftime("%d.%m.%Y")
+            subject_names = []
+            if subjects_for_booking:
+                subject_ids = subjects_for_booking.split(',')
+                for subj_id in subject_ids:
+                    if subj_id.strip():
+                        subject_names.append(subjects.get(subj_id.strip(), f"Предмет {subj_id}"))
             
+            subjects_text = ", ".join(subject_names) if subject_names else "Не указаны"
             await callback.message.edit_text(
                 f"Бронирование сохранено!\n\n"
                 f"Дата: {formatted_date}\n"
                 f"Время: {time_range}\n"
                 f"Роль: {rolesRU[booking_role]}\n"
-                f"Предметы: {user_data.get('subjects', '')}"
+                f"Предметы: {subjects_text}"
             )
         else:
             await callback.answer("Ошибка сохранения в БД", show_alert=True)
