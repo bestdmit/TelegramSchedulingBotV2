@@ -30,8 +30,8 @@ class AllUserServices:
         user_id = callback.data.split("_")[-1]
         reg_user = await self.user_worker.get_user(int(user_id))
         roles = reg_user["roles"]
-        number_subjects = reg_user["subjects"].split(',')
-        user_subjects = ','.join([subjects[x] for x in number_subjects])
+        student_subjects = reg_user['student_subjects']
+        teacher_subjects = reg_user['teacher_subjects']
 
         builder = InlineKeyboardBuilder()
         builder.button(
@@ -40,8 +40,8 @@ class AllUserServices:
         )
         
         builder.button(
-            text = "Предметы",
-            callback_data=f"registered_user_change_subjects_{user_id}"
+            text = "Студ предметы",
+            callback_data=f"registered_user_change_student_subjects_{user_id}"
         )
             
         builder.adjust(2)
@@ -54,9 +54,11 @@ class AllUserServices:
             user_info+=f"Роли: {roles}\n"
         else:
             user_info+=f"Роли НЕ НАЗНАЧЕНЫ\n"
-        if subjects:
-            user_info+=f"Предметы: {user_subjects}\n"
-        else:
+        if len(student_subjects)>0:
+            user_info+=f"Предметы ученика: {student_subjects}\n"
+        if len(teacher_subjects)>0:
+            user_info+=f"Предметы препода: {teacher_subjects}\n"
+        if len(student_subjects)+len(teacher_subjects)==0:
             ser_info+=f"Предметы НЕ НАЗНАЧЕНЫ\n"
         await callback.message.answer(
             user_info,
@@ -117,7 +119,7 @@ class AllUserServices:
     async def process_change_subjects(self,callback: CallbackQuery):
         user_id = int(callback.data.split("_")[-1])
         user = await self.user_worker.get_user(user_id)
-        subjects = user["subjects"].split(",")
+        subjects = user["student_subjects"].split(",")
         await callback.message.answer(
             f"Выбранный пользователь:{user["user_name"]}\nВыберите новые предметы:",
             reply_markup=change_subjects_keyboard(selected_subjects=set(subjects),user_id=user_id)
@@ -164,7 +166,7 @@ class AllUserServices:
         
         success = await self.user_worker.update_user(
             user_id=user_id,
-            subjects=subjects_str
+            student_subjects=subjects_str
         )
         
         if success:

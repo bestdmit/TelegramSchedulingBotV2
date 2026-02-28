@@ -64,12 +64,6 @@ async def show_all_users_handler(message: Message,userWorker:UsersDataBaseWorker
     await all_service.show_all_users(message=message)
 
 @admin_router.callback_query(F.data.startswith("registered_user_info"))
-async def process_redistered_user_click(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
-    user_id = callback.data.split("_")[-1]
-    reg_user = await userWorker.get_user(int(user_id))
-    roles = reg_user["roles"]
-    teacher_subjects = reg_user["teacher_subjects"]
-    student_subjects = reg_user["student_subjects"]
 async def process_redistered_user_click_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
     all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
     await all_service.process_redistered_user_click(callback=callback)
@@ -92,53 +86,10 @@ async def process_role_save_handler(callback: CallbackQuery, userWorker: UsersDa
 
 # Обработка смены предметов
 
-@admin_router.callback_query(F.data.startswith("registered_user_change_subjects"))
+@admin_router.callback_query(F.data.startswith("registered_user_change_student_subjects"))
 async def process_change_subjects_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
     all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
     await all_service.process_change_subjects(callback=callback)
-    
-    # builder.button(
-    #     text = "Предметы",
-    #     callback_data=f"registered_user_subjects_{user_id}"
-    # )
-    
-    # ДОБАВЛЕНЫ: отдельные кнопки для каждой роли
-    if "teacher" in roles:
-        builder.button(
-            text="Предметы преподавателя",
-            callback_data=f"teacher_give_subjects_{user_id}"
-        )
-    
-    if "student" in roles:
-        builder.button(
-            text="Предметы ученика",
-            callback_data=f"student_give_subjects_{user_id}"
-        )
-        
-    builder.adjust(2)
-    await callback.message.delete()
-    await callback.answer()
-
-    user_info = f"Пользователь: {reg_user['user_name']}\n"
-    user_info+=f"User Id: {user_id}\n"
-    if len(roles)>0:
-        user_info+=f"Роли: {roles}\n"
-    else:
-        user_info+=f"Роли НЕ НАЗНАЧЕНЫ\n"
-    if teacher_subjects:
-        teacher_names = [subjects.get(s_id, f"Предмет {s_id}") 
-                        for s_id in teacher_subjects.split(',') if s_id]
-        user_info += f"Предметы преподавателя: {', '.join(teacher_names)}\n"
-    
-    if student_subjects:
-        student_names = [subjects.get(s_id, f"Предмет {s_id}") 
-                        for s_id in student_subjects.split(',') if s_id]
-        user_info += f"Предметы ученика: {', '.join(student_names)}\n"
-    if (not student_subjects) and (not teacher_subjects):
-        user_info+=f"Предметы НЕ НАЗНАЧЕНЫ\n"
-    await callback.message.answer(
-        user_info,
-        reply_markup=builder.as_markup())
 
 @admin_router.callback_query(F.data.startswith("teacher_give_subjects_"))
 async def process_teacher_subjects_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
@@ -149,6 +100,7 @@ async def process_teacher_subjects_handler(callback: CallbackQuery, userWorker: 
 async def process_student_subjects_handler(callback: CallbackQuery, userWorker: UsersDataBaseWorker):
     service = AdminServicesFactory.create_admin_service_for_simple_users(userWorker)
     await service.process_student_subjects(callback=callback)
+    
 @admin_router.callback_query(F.data.startswith("changed_subject_tgl"))
 async def process_subject_toggle_handler(callback: CallbackQuery,userWorker:UsersDataBaseWorker):
     all_service = AdminServicesFactory.create_admin_service_for_all_users(user_worker=userWorker)
