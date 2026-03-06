@@ -9,7 +9,19 @@ from typesClasses.CalendarClick import CalendarClick
 from typesClasses.TimeClick import TimeClick
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from typesClasses.SubjectClick import SubjectClick
+from keyboards import create_calendar_keyboard, create_time_keyboard, create_subject_selection_keyboard
 booking_router = Router()
+
+@booking_router.callback_query(SubjectClick.filter())
+async def process_subject_selection(callback: CallbackQuery, 
+                                    callback_data: SubjectClick,
+                                    state: FSMContext,
+                                    userWorker: UsersDataBaseWorker,
+                                    bookingWorker: BookingsDataBaseWorker):
+    """Обработчик выбора предмета учеником"""
+    service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
+    await service.process_subject_selection(callback, callback_data, state)
 
 @booking_router.message(F.text == "Забронировать время")
 async def handle_book_time(message: Message, 
@@ -116,7 +128,7 @@ async def handle_booking_child(callback: CallbackQuery,
                                state: FSMContext,
                                userWorker: UsersDataBaseWorker,
                                bookingWorker: BookingsDataBaseWorker):
-    # Выбор ребёнка родителем для записи
+    """Выбор ребёнка родителем для записи"""
     try:
         child_id = int(callback.data.split("_")[-1])
     except Exception:
@@ -128,18 +140,31 @@ async def handle_booking_child(callback: CallbackQuery,
         await callback.message.answer("Ребёнок не найден")
         await callback.answer()
         return
-    if len(child['student_subjects']) == 0:
+    
+    student_subjects = child.get('student_subjects', '')
+    if not student_subjects:
         await callback.message.answer("У ребёнка нет предметов")
         await callback.answer()
         return
 
+    await state.update_data(
+        booking_user_id=child_id, 
+        booking_role="student", 
+        booking_user_name=child.get('user_name')
+    )
 
-    # Сохраняем в состоянии, что запись создаётся для ребёнка
-    await state.update_data(booking_user_id=child_id, booking_role="student", booking_user_name=child.get('user_name'))
-
-    # Перейдём к выбору даты как в режиме ученика
-    service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
-    await service.handle_student_booking(callback, state)
+    subject_ids = [s_id.strip() for s_id in student_subjects.split(',') if s_id.strip()]
+    
+    if not subject_ids:
+        await callback.message.answer("У ребёнка нет предметов")
+        await callback.answer()
+        return
+    
+    await callback.message.edit_text(
+        text=f"Выберите предмет для записи ребёнка {child.get('user_name')}:",
+        reply_markup=create_subject_selection_keyboard(subject_ids)
+    )
+    await callback.answer()
 
 
 @booking_router.callback_query(F.data == "confirm_booking")

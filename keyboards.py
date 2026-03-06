@@ -1,4 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton,InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton,InlineKeyboardButton, InlineKeyboardMarkup
 from config import roles, subjects
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import types
@@ -242,4 +242,29 @@ def create_time_keyboard(selected_date: datetime.date,start_selection: str = Non
         text="Назад к календарю",
         callback_data=TimeClick(action="back", hour=0, minute=0).pack()
     ))
+    return builder.as_markup()
+
+def create_subject_selection_keyboard(subject_ids: list) -> InlineKeyboardMarkup:
+    """
+    Создает клавиатуру для выбора предмета из списка ID предметов
+    """
+    from typesClasses.SubjectClick import SubjectClick
+    from config import subjects
+    
+    builder = InlineKeyboardBuilder()
+    
+    for subject_id in subject_ids:
+        subject_name = subjects.get(subject_id, f"Предмет {subject_id}")
+        builder.button(
+            text=subject_name,
+            callback_data=SubjectClick(subject_id=subject_id).pack()
+        )
+    
+    builder.adjust(1)  
+    
+    builder.row(types.InlineKeyboardButton(
+        text="❌ Отмена",
+        callback_data="booking_cancel"
+    ))
+    
     return builder.as_markup()
