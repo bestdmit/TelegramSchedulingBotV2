@@ -40,8 +40,11 @@ class BookingsListService:
 
         # Кнопки для личных бронирований
         for booking in bookings:
+            display = f"📅 {booking['event_date']} - {booking['event_time']}"
+            if booking.get('amount') is not None:
+                display += f" ({booking['amount']})"
             builder.button(
-                text=f"📅 {booking['event_date']} - {booking['event_time']}",
+                text=display,
                 callback_data=f"booking_info_{booking['booking_id']}"
             )
 
@@ -72,9 +75,11 @@ class BookingsListService:
         booking_id = int(callback.data.split("_")[-1])
         booking = await booking_worker.get_booking_by_id(booking_id=booking_id)
 
-        res = (f"Дата бронирования: {booking["event_date"]}\n"+
-                f"Ваша роль при бронировании: {rolesRU[booking["user_role"]]}\n"+
-                f"Время бронирования: {booking["event_time"]}")
+        res = (f"Дата бронирования: {booking['event_date']}\n"
+                f"Ваша роль при бронировании: {rolesRU[booking['user_role']]}\n"
+                f"Время бронирования: {booking['event_time']}\n")
+        if booking.get('amount') is not None:
+            res += f"Сумма: {booking['amount']}\n"
         
         builder = InlineKeyboardBuilder()
         builder.button(

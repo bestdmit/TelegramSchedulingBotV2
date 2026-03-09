@@ -11,6 +11,8 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from typesClasses.SubjectClick import SubjectClick
 from keyboards import create_calendar_keyboard, create_time_keyboard, create_subject_selection_keyboard
+from states.BookingStates import BookingStates
+
 booking_router = Router()
 
 @booking_router.callback_query(SubjectClick.filter())
@@ -175,6 +177,16 @@ async def handle_confirm_booking(callback: CallbackQuery,
     """Обработчик подтверждения бронирования"""
     service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
     await service.confirm_booking(callback, state,userWorker,bookingWorker)
+
+
+@booking_router.message(BookingStates.choosing_amount)
+async def handle_amount_message(message: Message,
+                                state: FSMContext,
+                                userWorker: UsersDataBaseWorker,
+                                bookingWorker: BookingsDataBaseWorker):
+    """Пользователь вводит сумму перед бронированием"""
+    service = BookingServiceFactory.create_booking_service(userWorker, bookingWorker)
+    await service.handle_amount_input(message, state, userWorker, bookingWorker)
 
 @booking_router.message(F.text == "Мои бронирования")
 @booking_router.message(Command("show_bookings"))

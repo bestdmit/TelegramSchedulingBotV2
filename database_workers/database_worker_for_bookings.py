@@ -29,7 +29,8 @@ class BookingsDataBaseWorker:
 
     async def add_booking(self,user_id:int,user_role:str,
                           subjects:str,event_date:date,
-                          event_time:str):
+                          event_time:str,
+                          amount:float | None = None):
         """
         Добавление бронирования в БД
         
@@ -37,10 +38,8 @@ class BookingsDataBaseWorker:
         :type event_date: date
         :param event_time: Время
         :type event_time: time
-        :param point_type: Начало/конец
-        :type point_type: str
-        :param time_type: Возможность/факт/длительность
-        :type time_type: str
+        :param amount: Сумма оплаты/вознаграждения
+        :type amount: float or None
         """
         try:
             if not self.pool:
@@ -51,24 +50,46 @@ class BookingsDataBaseWorker:
                 new_id = (val or 0) + 1
                 formatted_date = event_date.strftime("%d.%m.%Y")
                 time_type = time_types["type1"]
+                # пытаемся записать сумму, но старые базы могли не иметь этой колонки
                 query = """
-                        INSERT into bookings (booking_id,user_id,user_role,subjects,event_date,event_time,time_type)
-                        VALUES ($1,$2,$3,$4,$5,$6,$7)
+                        INSERT into bookings \
+                            (booking_id,user_id,user_role,subjects,event_date,event_time,time_type,amount)\
+                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
                         """
-                await conn.execute(
-                    query,
-                    new_id,
-                    user_id, 
-                    user_role, 
-                    subjects,
-                    formatted_date, 
-                    event_time, 
-                    time_type
-                )
+                try:
+                    await conn.execute(
+                        query,
+                        new_id,
+                        user_id, 
+                        user_role, 
+                        subjects,
+                        formatted_date, 
+                        event_time, 
+                        time_type,
+                        amount
+                    )
+                except Exception as e:
+                    # если колонки нет, пробуем без неё
+                    if 'column "amount"' in str(e).lower():
+                        query2 = """
+                                INSERT into bookings \
+                                    (booking_id,user_id,user_role,subjects,event_date,event_time,time_type)\
+                                VALUES ($1,$2,$3,$4,$5,$6,$7)
+                                """
+                        await conn.execute(
+                            query2,
+                            new_id,
+                            user_id, 
+                            user_role, 
+                            subjects,
+                            formatted_date, 
+                            event_time, 
+                            time_type
+                        )
+                    else:
+                        raise
                 print(f"Успешно добавлена запись для пользователя {user_id}")
                 return True
-                # await conn.execute(query,(new_id),user_id,user_role,subjects,event_date,event_time,point_type,time_type)
-                # print(f"Успешно добавлена запись №{new_id}")
         except Exception as e:
             print(f"Ошибка добавления записи: {e}")
             return False
@@ -114,6 +135,26 @@ class BookingsDataBaseWorker:
                 
         except Exception as e:
             print(f"Ошибка при получении записи №{booking_id}: {e}")
+            return None
+
+    async def get_last_amount(self, user_id: int) -> Any:
+        """Возвращает последнюю указанную сумму для пользователя или None"""
+        if not self.pool:
+            print("Нет подключения к БД")
+            return None
+        try:
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    "SELECT amount FROM bookings WHERE user_id = $1 AND amount IS NOT NULL "
+                    "ORDER BY booking_id DESC LIMIT 1",
+                    user_id
+                )
+                return row["amount"] if row else None
+        except Exception as e:
+            # возможна ошибка, если колонки amount нет
+            if 'column "amount"' in str(e).lower():
+                return None
+            print(f"Ошибка при получении последней суммы для пользователя {user_id}: {e}")
             return None
 
     async def delete_booking(self, booking_id: int) -> bool:

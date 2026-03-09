@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     event_date VARCHAR(10),
     event_time VARCHAR(11),
     time_type VARCHAR(255) NOT NULL,
+    amount NUMERIC,                           -- новая колонка для суммы оплаты/вознаграждения
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

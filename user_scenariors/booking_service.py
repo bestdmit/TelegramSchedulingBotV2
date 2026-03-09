@@ -242,41 +242,76 @@ class BookingService:
                 reply_markup=create_time_keyboard(selected_date, start, end)
             )
 
-        # Обработка нажатия "Подтвердить"
+        # Обработка нажатия "Подтвердить" (переход к запросу суммы)
         elif callback_data.action == "confirm":
-            data = await state.get_data()
-            start = data.get("start_time")
-            end = data.get("end_time")
-            
-            data_state = await state.get_data()
-            target_user_id = data_state.get('booking_user_id') or callback.from_user.id
-            user_data = await userWorker.get_user(target_user_id)
-            date_str = f"{callback_data.day:02d}.{callback_data.month:02d}.{callback_data.year}"
-            
-            # Получаем выбранный предмет для ученика
-            selected_subject = data_state.get("selected_subject", "")
-            subject_name = subjects.get(selected_subject, selected_subject) if selected_subject else "Не выбран"
-            
-            builder = InlineKeyboardBuilder()
-            builder.button(text="✅ Да, записать", callback_data="confirm_booking")
-            builder.button(text="❌ Отмена", callback_data="booking_cancel")
-            
-            text = (f"📍 Подтверждение бронирования:\n\n"
-                   f"Дата: {date_str}\n"
-                   f"Интервал: {start} — {end}\n"
-                   f"Имя: {user_data.get('user_name')}\n")
-            
-            if selected_subject:
-                text += f"Предмет: {subject_name}\n"
-            
-            text += f"\nБронируем этот промежуток?"
-            
-            await callback.message.edit_text(
-                text,
-                reply_markup=builder.as_markup()
-            )
+            # прежде чем показывать окончательное подтверждение, запросим сумму
+            await self._ask_for_amount(callback, state, userWorker)
 
+    async def _ask_for_amount(self, callback: CallbackQuery, state: FSMContext, userWorker: UsersDataBaseWorker) -> None:
+        """Переходит к диалогу ввода суммы. Сохраняем в state предыдущие данные."""
+        data = await state.get_data()
+        # получаем роль и последнюю сумму для пользователя
+        booking_role = data.get("booking_role")
+        target_user_id = data.get('booking_user_id') or callback.from_user.id
+        last_amount = await self.booking_worker.get_last_amount(target_user_id)
+
+        prompt = "Введите сумму, которую вы можете заплатить" if booking_role == "student" else \
+                 "Введите сумму, которую вы хотите получить" if booking_role == "teacher" else \
+                 "Введите сумму"
+        if last_amount is not None:
+            prompt += f" (ранее: {last_amount})"
+        prompt += ":"
+
+        await callback.message.edit_text(prompt)
+        await state.set_state(BookingStates.choosing_amount)
         await callback.answer()
+
+    async def handle_amount_input(self, message: Message, state: FSMContext, userWorker: UsersDataBaseWorker, bookingWorker: BookingsDataBaseWorker) -> None:
+        """Обрабатывает текст с введённой суммой, затем выводит окончательное подтверждение"""
+        text = message.text.strip()
+        try:
+            # допускаем запятую как разделитель
+            amount = float(text.replace(",", "."))
+        except ValueError:
+            await message.answer("Пожалуйста, введите корректную числовую сумму")
+            return
+
+        await state.update_data(amount=amount)
+
+        # теперь показываем итоговое подтверждение с уже введённой суммой
+        data = await state.get_data()
+        start = data.get("start_time")
+        end = data.get("end_time")
+        event_date = data.get("event_date")
+        if isinstance(event_date, datetime):
+            formatted_date = event_date.strftime("%d.%m.%Y")
+        else:
+            formatted_date = event_date if event_date else ""
+
+        target_user_id = data.get('booking_user_id') or message.from_user.id
+        user_data = await userWorker.get_user(target_user_id)
+        booking_role = data.get("booking_role")
+        selected_subject = data.get("selected_subject", "")
+        subject_name = subjects.get(selected_subject, selected_subject) if selected_subject else "Не выбран"
+
+        builder = InlineKeyboardBuilder()
+        builder.button(text="✅ Подтвердить", callback_data="confirm_booking")
+        builder.button(text="❌ Отмена", callback_data="booking_cancel")
+        builder.adjust(2)
+
+        confirmation_text = (
+            f"📍 <b>Подтверждение бронирования:</b>\n\n"
+            f"📅 Дата: {formatted_date}\n"
+            f"⏰ Время: {start} — {end}\n"
+            f"👤 Имя: {user_data.get('user_name', 'Не указано')}\n"
+        )
+        if booking_role == "student" and selected_subject:
+            confirmation_text += f"📚 Предмет: {subject_name}\n"
+        confirmation_text += f"💰 Сумма: {amount}\n\n"
+        confirmation_text += "Подтверждаете бронирование?"
+
+        await message.answer(confirmation_text, parse_mode="HTML", reply_markup=builder.as_markup())
+        await state.set_state(BookingStates.choosing_range)  # сбрасываем состояние обратно, можно очистить
     
     async def _show_confirmation(self, callback: CallbackQuery, state: FSMContext) -> None:
         """Показывает экран подтверждения бронирования"""
@@ -315,6 +350,10 @@ class BookingService:
         if booking_role == "student" and selected_subject:
             subject_name = subjects.get(selected_subject, selected_subject)
             text += f"📚 Предмет: {subject_name}\n"
+        # Добавляем сумму, если есть
+        amount = data.get("amount")
+        if amount is not None:
+            text += f"💰 Сумма: {amount}\n"
         
         text += f"\nПодтверждаете бронирование?"
         
@@ -341,6 +380,11 @@ class BookingService:
             return
         
         data = await state.get_data()
+        # если сумма ещё не введена, сначала спросим её
+        if data.get("amount") is None:
+            await self._ask_for_amount(callback, state, userWorker)
+            return
+
         start_time_str = data.get("start_time")
         end_time_str = data.get("end_time")
         
@@ -386,12 +430,15 @@ class BookingService:
                 # Если предмет не выбран (для обратной совместимости)
                 subjects_for_booking = user_data.get("student_subjects", "")
         
+        # получаем сумму из состояния (может быть None)
+        amount = data.get("amount")
         success = await bookingWorker.add_booking(
             user_id=target_user_id,
             user_role=booking_role,
             subjects=subjects_for_booking,  
             event_date=event_date,
-            event_time=time_range  
+            event_time=time_range,
+            amount=amount
         )
         
         if success:
@@ -406,14 +453,17 @@ class BookingService:
                         subject_names.append(subjects.get(subj_id.strip(), f"Предмет {subj_id}"))
             
             subjects_text = ", ".join(subject_names) if subject_names else "Не указаны"
-            
-            await callback.message.edit_text(
+            result_text = (
                 f"✅ Бронирование сохранено!\n\n"
                 f"📅 Дата: {formatted_date}\n"
                 f"⏰ Время: {time_range}\n"
                 f"👤 Роль: {rolesRU[booking_role]}\n"
                 f"📚 Предметы: {subjects_text}"
             )
+            if amount is not None:
+                result_text += f"\n💰 Сумма: {amount}"
+
+            await callback.message.edit_text(result_text)
         else:
             await callback.answer("❌ Ошибка сохранения в БД", show_alert=True)
         
